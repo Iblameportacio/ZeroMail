@@ -6,14 +6,24 @@ const input = document.getElementById('secretoInput');
 const btn = document.getElementById('enviarBtn');
 const container = document.getElementById('secretos-container');
 
-// LOGICA MENU BURGER
+// --- LÓGICA MENÚ BURGER (MEJORADA) ---
 const menuToggle = document.getElementById('menu-toggle');
 const sideMenu = document.getElementById('side-menu');
 const verPoliticasBtn = document.getElementById('ver-politicas-btn');
 
-menuToggle.onclick = () => sideMenu.classList.toggle('active');
+menuToggle.onclick = (e) => {
+    e.stopPropagation(); // Evita que el clic se propague al body
+    sideMenu.classList.toggle('active');
+};
 
-// MODAL
+// Cerrar menú al hacer clic fuera (Toque pro)
+document.addEventListener('click', (e) => {
+    if (!sideMenu.contains(e.target) && e.target !== menuToggle) {
+        sideMenu.classList.remove('active');
+    }
+});
+
+// --- MODAL ---
 const modal = document.getElementById('modal-politicas');
 const btnAceptar = document.getElementById('btn-aceptar');
 const btnRechazar = document.getElementById('btn-rechazar');
@@ -34,7 +44,7 @@ verPoliticasBtn.onclick = () => {
     sideMenu.classList.remove('active');
 };
 
-// REACCIONES
+// --- REACCIONES ---
 async function reaccionar(id, valorActual, columna) {
     if (localStorage.getItem(`voto_${id}`)) return alert("Ya reaccionaste, broski.");
 
@@ -46,16 +56,28 @@ async function reaccionar(id, valorActual, columna) {
     if (!error) {
         localStorage.setItem(`voto_${id}`, 'true');
         await leerSecretos();
+    } else {
+        console.error("Error al reaccionar:", error);
     }
 }
 
-// ENVIAR
+// --- ENVIAR ---
 async function enviarSecreto() {
     const texto = input.value.trim();
-    const captchaRes = turnstile.getResponse();
     
-    if (!captchaRes) return alert("Completa el captcha.");
-    if (!texto) return alert("Escribe algo...");
+    // Validación del Captcha
+    let captchaRes;
+    try {
+        captchaRes = turnstile.getResponse();
+    } catch (e) {
+        console.error("Captcha no cargado aún");
+    }
+    
+    if (!captchaRes) return alert("Completa el captcha, no seas bot.");
+    if (!texto) return alert("Escribe algo, el chisme no se cuenta solo...");
+
+    btn.disabled = true; // Evita doble envío
+    btn.innerText = "Publicando...";
 
     const { error } = await _supabase
         .from('secretos')
@@ -63,15 +85,29 @@ async function enviarSecreto() {
 
     if (!error) {
         input.value = "";
-        turnstile.reset();
+        if (window.turnstile) turnstile.reset();
         await leerSecretos();
+    } else {
+        alert("Error al publicar, intenta de nuevo.");
     }
+    
+    btn.disabled = false;
+    btn.innerText = "Publicar";
 }
 
+// --- LEER CHISMES (CON MAPA DE REACCIONES) ---
 async function leerSecretos() {
-    const { data: secretos } = await _supabase.from('secretos').select('*').order('created_at', { ascending: false });
+    const { data: secretos, error } = await _supabase
+        .from('secretos')
+        .select('*')
+        .order('created_at', { ascending: false });
     
-    if (secretos) {
+    if (error) {
+        container.innerHTML = `<p style="color:var(--danger); text-align:center;">Error al cargar chismes.</p>`;
+        return;
+    }
+    
+    if (secretos && secretos.length > 0) {
         container.innerHTML = secretos.map(s => {
             const yaVoto = localStorage.getItem(`voto_${s.id}`);
             return `
@@ -80,14 +116,21 @@ async function leerSecretos() {
                     <div class="footer-card">
                         <small>${new Date(s.created_at).toLocaleString()}</small>
                         <div class="actions">
-                            <button class="like-btn" ${yaVoto ? 'disabled' : ''} onclick="reaccionar(${s.id}, ${s.likes}, 'likes')">🔥 ${s.likes || 0}</button>
-                            <button class="dislike-btn" ${yaVoto ? 'disabled' : ''} onclick="reaccionar(${s.id}, ${s.dislikes}, 'dislikes')">💩 ${s.dislikes || 0}</button>
+                            <button class="like-btn" ${yaVoto ? 'disabled' : ''} onclick="reaccionar(${s.id}, ${s.likes}, 'likes')">
+                                🔥 ${s.likes || 0}
+                            </button>
+                            <button class="dislike-btn" ${yaVoto ? 'disabled' : ''} onclick="reaccionar(${s.id}, ${s.dislikes}, 'dislikes')">
+                                💩 ${s.dislikes || 0}
+                            </button>
                         </div>
                     </div>
                 </div>`;
         }).join('');
+    } else {
+        container.innerHTML = `<p style="text-align:center; color:var(--text-dim); padding:20px;">Aún no hay chismes. ¡Sé el primero!</p>`;
     }
 }
 
+// Event Listeners finales
 btn.onclick = enviarSecreto;
-leerSecretos();
+window.onload = leerSecretos; // Cargar al abrir la página
