@@ -5,8 +5,9 @@ const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const input = document.getElementById('secretoInput');
 const btn = document.getElementById('enviarBtn');
 const container = document.getElementById('secretos-container');
+const fotoInput = document.getElementById('fotoInput');
 
-// --- LÓGICA DEL MODAL ---
+// LÓGICA DEL MODA
 const modal = document.getElementById('modal-politicas');
 const btnAceptar = document.getElementById('btn-aceptar');
 const btnRechazar = document.getElementById('btn-rechazar');
@@ -24,6 +25,53 @@ btnRechazar.onclick = () => {
     window.location.href = "https://google.com";
 };
 
+// COMPRESIÓN DE IMAGEN
+async function comprimirImagen(archivo) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(archivo);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 800; // Resolución económica
+                let width = img.width;
+                let height = img.height;
+
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                // Convertimos a WebP calidad 0.7 para ahorrar espacio extremo
+                canvas.toBlob((blob) => resolve(blob), 'image/webp', 0.7);
+            };
+        };
+    });
+}
+
+// LIMPIEZA AUTOMÁTICA (Máximo 50 mensajes)
+async function mantenerBaseLigera() {
+    const { count } = await _supabase
+        .from('secretos')
+        .select('*', { count: 'exact', head: true });
+
+    if (count > 50) { // Límite de 50 para ahorrar espacio
+        const { data: viejos } = await _supabase
+            .from('secretos')
+            .select('id')
+            .order('created_at', { ascending: true })
+            .limit(20); // Borra los 20 más antiguos si se pasa
+
+        const ids = viejos.map(v => v.id);
+        await _supabase.from('secretos').delete().in('id', ids);
+    }
+}
+
 // --- REACCIONES ---
 async function reaccionar(id, valorActual, columna) {
     if (localStorage.getItem(`voto_${id}`)) return alert("Ya reaccionaste, broski.");
@@ -39,32 +87,58 @@ async function reaccionar(id, valorActual, columna) {
     }
 }
 
-// --- ENVIAR ---
+// ENVIAR CON MULTIMEDIA
 async function enviarSecreto() {
     const texto = input.value.trim();
     const captchaRes = turnstile.getResponse();
+    const file = fotoInput.files[0];
     
     if (!captchaRes) return alert("Completa el captcha.");
-    if (!texto) return alert("Escribe algo...");
+    if (!texto && !file) return alert("Escribe algo o sube una imagen.");
 
     btn.disabled = true;
-    btn.innerText = "Publicando...";
+    btn.innerText = "Enviando...";
+    let urlFoto = null;
 
-    const { error } = await _supabase
-        .from('secretos')
-        .insert([{ contenido: texto, likes: 0, dislikes: 0 }]);
+    try {
+        // Subida de imagen al bucketimagenes
+        if (file) {
+            const fotoComprimida = await comprimirImagen(file);
+            const fileName = `${Date.now()}.webp`;
+            
+            const { data, error: uploadError } = await _supabase.storage
+                .from('imagenes')
+                .upload(fileName, fotoComprimida);
 
-    if (!error) {
-        input.value = "";
-        turnstile.reset();
-        await leerSecretos();
+            if (!uploadError) {
+                const { data: urlData } = _supabase.storage
+                    .from('imagenes')
+                    .getPublicUrl(fileName);
+                urlFoto = urlData.publicUrl;
+            }
+        }
+
+        const { error } = await _supabase
+            .from('secretos')
+            .insert([{ contenido: texto, imagen_url: urlFoto, likes: 0, dislikes: 0 }]);
+
+        if (!error) {
+            input.value = "";
+            fotoInput.value = "";
+            document.getElementById('preview-container').style.display = 'none';
+            turnstile.reset();
+            await mantenerBaseLigera();
+            await leerSecretos();
+        }
+    } catch (e) {
+        console.error(e);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = "Publicar";
     }
-    
-    btn.disabled = false;
-    btn.innerText = "Publicar";
 }
 
-// --- FUNCIÓN PARA RE-EJECUTAR SCRIPTS DE ANUNCIOS ---
+// FUNCIoN PARA REEJECUTAR SCRIPTS DE ANUNCIOS
 function cargarAds() {
     const ads = document.querySelectorAll('.ad-inline script');
     ads.forEach(oldScript => {
@@ -75,7 +149,7 @@ function cargarAds() {
     });
 }
 
-// --- LEER CHISMES CON ANUNCIOS ---
+// LEER MENSAJES
 async function leerSecretos() {
     const { data: secretos } = await _supabase
         .from('secretos')
@@ -87,10 +161,12 @@ async function leerSecretos() {
         
         secretos.forEach((s, index) => {
             const yaVoto = localStorage.getItem(`voto_${s.id}`);
+            const imgHtml = s.imagen_url ? `<img src="${s.imagen_url}" class="card-img" style="width:100%; border-radius:8px; margin:10px 0;">` : "";
             
             htmlFinal += `
                 <div class="card">
                     <p>${s.contenido}</p>
+                    ${imgHtml}
                     <div class="footer-card">
                         <small>${new Date(s.created_at).toLocaleString()}</small>
                         <div class="actions">
@@ -100,6 +176,7 @@ async function leerSecretos() {
                     </div>
                 </div>`;
 
+            // Anuncio Native cada 3 mensajes
             if ((index + 1) % 3 === 0) {
                 htmlFinal += `
                     <div class="ad-inline" style="padding: 15px; border-bottom: 1px solid var(--border-color); text-align: center; background: #0a0a0a;">
@@ -111,7 +188,7 @@ async function leerSecretos() {
         });
 
         container.innerHTML = htmlFinal;
-        cargarAds(); // <--- IMPORTANTE: Esto despierta los anuncios
+        cargarAds();
     }
 }
 
