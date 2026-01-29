@@ -8,23 +8,38 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
+    <div id="modal-politicas" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Aviso de Responsabilidad</h2>
+            <p>Al entrar a <b>TuChismeNuevo</b>, aceptas que:</p>
+            <ul>
+                <li>El contenido es anónimo y bajo tu propia responsabilidad.</li>
+                <li>No se permite contenido ilegal ni enlaces maliciosos.</li>
+                <li>El sistema filtrará automáticamente palabras prohibidas.</li>
+            </ul>
+            <div class="modal-buttons">
+                <button id="btn-aceptar" class="btn-primary">Aceptar y Entrar</button>
+                <button id="btn-rechazar" class="btn-secondary">No acepto</button>
+            </div>
+        </div>
+    </div>
+
     <header>
         <h1>TuChisme<span class="bárbaro">Nuevo</span></h1>
-        <p class="warning">Aviso: Lo que se sube es totalmente anónimo y bajo tu responsabilidad.</p>
+        <p class="warning">Feed centrado y modo oscuro profundo.</p>
     </header>
 
     <main>
         <section id="form-area">
-            <textarea id="secretoInput" placeholder="Suelta tu secreto más bárbaro aquí..."></textarea>
+            <textarea id="secretoInput" placeholder="¿Qué está pasando? (Suelta tu chisme...)"></textarea>
             <div class="form-footer">
-                <button id="enviarBtn">Publicar Anónimamente</button>
+                <button id="enviarBtn">Publicar</button>
             </div>
         </section>
 
-        <hr>
-
         <section id="secretos-container">
-            <div class="loading">Cargando secretos bárbaros...</div>
+            <div class="loading">Cargando chismes...</div>
         </section>
     </main>
 
