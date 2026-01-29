@@ -1,1 +1,27 @@
+/* Contenedor de likes y fecha */
+.footer-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #30363d;
+}
 
+.actions {
+    display: flex;
+    gap: 10px;
+}
+
+.like-btn, .dislike-btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.like-btn:hover { border-color: #238636; color: #238636; }
+.dislike-btn:hover { border-color: #da3633; color: #da3633; }
