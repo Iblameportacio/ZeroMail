@@ -27,15 +27,16 @@ main {
     border-right: 1px solid var(--border-color);
     min-height: 100vh;
     box-sizing: border-box;
+    position: relative; /* Importante para que el menú flote respecto a esto */
 }
 
-/* HEADER Y MENU BURGER */
+/* --- HEADER CON POSICION RELATIVA PARA EL MENU --- */
 header {
     padding: 15px;
     border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.9);
     backdrop-filter: blur(12px);
     z-index: 100;
 }
@@ -44,6 +45,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
 }
 
 header h1 { font-size: 20px; margin: 0; }
@@ -56,19 +58,32 @@ header h1 { font-size: 20px; margin: 0; }
     cursor: pointer;
 }
 
+/* --- MENU FLOTANTE (EL ARREGLO) --- */
 .nav-menu {
+    position: absolute; /* Ya no empuja el contenido */
+    top: 100%; /* Aparece justo debajo del header */
+    left: 0;
+    width: 100%;
+    background: #161b22;
+    border-bottom: 1px solid var(--border-color);
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease-out;
-    background: #161b22;
-    margin: 0 -15px;
-    padding: 0 15px;
+    transition: all 0.3s ease-in-out;
+    z-index: 99;
+    padding: 0 20px;
+    box-sizing: border-box;
+    box-shadow: 0 10px 15px rgba(0,0,0,0.5); /* Sombra para dar profundidad */
 }
 
 .nav-menu.active {
-    max-height: 150px;
-    padding: 15px;
-    border-top: 1px solid var(--border-color);
+    max-height: 250px; /* Suficiente espacio para el mensaje */
+    padding: 20px;
+}
+
+.nav-menu p {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 15px;
 }
 
 .btn-link {
@@ -81,14 +96,25 @@ header h1 { font-size: 20px; margin: 0; }
     padding: 0;
 }
 
-/* FORMULARIO Y CARDS */
+/* --- FORMULARIO Y CARDS --- */
 #form-area { padding: 15px; border-bottom: 1px solid var(--border-color); }
 textarea {
     width: 100%; background: transparent; border: none; color: var(--text-main);
     font-size: 18px; resize: none; outline: none; min-height: 80px; box-sizing: border-box;
 }
 
-#captcha-container { margin: 10px 0; display: flex; justify-content: center; overflow: hidden; }
+#captcha-container { 
+    margin: 10px 0; 
+    display: flex; 
+    justify-content: center; 
+    max-width: 100%;
+    overflow: hidden; 
+}
+
+/* Ajuste captcha móvil */
+@media (max-width: 380px) {
+    #captcha-container { transform: scale(0.9); }
+}
 
 #enviarBtn {
     background: var(--accent); color: white; border: none; padding: 10px 25px;
