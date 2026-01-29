@@ -26,29 +26,33 @@
     </div>
 
     <header>
-        <div class="header-top">
-            <button id="menu-toggle" class="menu-btn">☰</button>
-        </div>
-        
-        <nav id="side-menu" class="nav-menu">
-            <p class="warning">Bienvenido (a) solo disfruta del chisme.</p>
-            <button id="ver-politicas-btn" class="btn-link">Ver Políticas de Uso</button>
-        </nav>
+        <h1>TuChisme<span class="barbaro">Nuevo</span></h1>
+        <p class="warning">Bienvenido (a) solo disfruta del chisme</p>
     </header>
 
-    <main>
-        <section id="form-area">
-            <textarea id="secretoInput" placeholder="¿Qué está pasando? (Suelta tu chisme...)"></textarea>
-            <div id="captcha-container" class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div>
-            <div class="form-footer">
-                <button id="enviarBtn">Publicar</button>
-            </div>
-        </section>
+    <div class="layout-container">
+        <aside class="ads-side left-ad">
+            <div class="ad-placeholder">ESPACIO PUBLICITARIO</div>
+        </aside>
 
-        <section id="secretos-container">
-            <div class="loading">Cargando chismes...</div>
-        </section>
-    </main>
+        <main>
+            <section id="form-area">
+                <textarea id="secretoInput" placeholder="¿Qué está pasando? (Suelta tu chisme...)"></textarea>
+                <div id="captcha-container" class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div>
+                <div class="form-footer">
+                    <button id="enviarBtn">Publicar</button>
+                </div>
+            </section>
+
+            <section id="secretos-container">
+                <div class="loading">Cargando chismes...</div>
+            </section>
+        </main>
+
+        <aside class="ads-side right-ad">
+            <div class="ad-placeholder">ESPACIO PUBLICITARIO</div>
+        </aside>
+    </div>
 
     <script src="./script.js"></script>
 </body>
