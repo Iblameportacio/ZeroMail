@@ -32,13 +32,18 @@
 
     <div class="layout-container">
         <aside class="ads-side left-ad">
-            <div class="ad-placeholder">
-                </div>
+            <div class="ad-placeholder">ESPACIO PUBLICITARIO</div>
         </aside>
 
         <main>
+            <nav class="comunidades-nav">
+                <button class="tab-btn active" onclick="cambiarComunidad('general')">🏠 Inicio</button>
+                <button class="tab-btn" onclick="cambiarComunidad('musica')">🎵 Música</button>
+                <button class="tab-btn" onclick="cambiarComunidad('tech')">💻 Tech</button>
+            </nav>
+
             <section id="form-area">
-                <textarea id="secretoInput" placeholder="Escribe tu mensaje anónimo aquí..."></textarea>
+                <textarea id="secretoInput" placeholder="¿Qué está pasando?"></textarea>
                 
                 <div id="preview-container" style="display:none; margin-bottom: 10px;">
                     <img id="img-preview" src="" style="width: 100%; border-radius: 8px; border: 1px solid var(--border-color);">
@@ -48,7 +53,6 @@
                 
                 <div class="form-footer" style="display: flex; gap: 10px; align-items: center;">
                     <input type="file" id="fotoInput" accept="image/*" style="display: none;" onchange="mostrarPreview(this)">
-                    
                     <button type="button" class="btn-secondary" onclick="document.getElementById('fotoInput').click()">🖼️</button>
                     <button id="enviarBtn" style="flex: 1;">Publicar</button>
                 </div>
@@ -60,14 +64,12 @@
         </main>
 
         <aside class="ads-side right-ad">
-            <div class="ad-placeholder">
-                </div>
+            <div class="ad-placeholder">ESPACIO PUBLICITARIO</div>
         </aside>
     </div>
 
     <script src="./script.js"></script>
     <script>
-        // Función rápida para ver la foto antes de subirla
         function mostrarPreview(input) {
             const preview = document.getElementById('img-preview');
             const container = document.getElementById('preview-container');
