@@ -6,21 +6,25 @@ const input = document.getElementById('secretoInput');
 const btn = document.getElementById('enviarBtn');
 const container = document.getElementById('secretos-container');
 
-// --- MODAL ---
+// --- LÓGICA DEL MODAL ---
 const modal = document.getElementById('modal-politicas');
 const btnAceptar = document.getElementById('btn-aceptar');
 const btnRechazar = document.getElementById('btn-rechazar');
 
+// Si ya aceptó, esconder modal
 if (localStorage.getItem('politicasAceptadas') === 'true') {
     modal.style.display = 'none';
 }
 
+// Botón Aceptar: Ahora sí va a funcionar porque no hay errores antes
 btnAceptar.onclick = () => {
     localStorage.setItem('politicasAceptadas', 'true');
     modal.style.display = 'none';
 };
 
-btnRechazar.onclick = () => window.location.href = "https://google.com";
+btnRechazar.onclick = () => {
+    window.location.href = "https://google.com";
+};
 
 // --- REACCIONES ---
 async function reaccionar(id, valorActual, columna) {
@@ -43,7 +47,7 @@ async function enviarSecreto() {
     const captchaRes = turnstile.getResponse();
     
     if (!captchaRes) return alert("Completa el captcha.");
-    if (!texto) return alert("Escribe tu chisme primero.");
+    if (!texto) return alert("Escribe algo...");
 
     btn.disabled = true;
     btn.innerText = "Publicando...";
@@ -63,7 +67,10 @@ async function enviarSecreto() {
 }
 
 async function leerSecretos() {
-    const { data: secretos } = await _supabase.from('secretos').select('*').order('created_at', { ascending: false });
+    const { data: secretos } = await _supabase
+        .from('secretos')
+        .select('*')
+        .order('created_at', { ascending: false });
     
     if (secretos) {
         container.innerHTML = secretos.map(s => {
