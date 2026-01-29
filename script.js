@@ -64,7 +64,18 @@ async function enviarSecreto() {
     btn.innerText = "Publicar";
 }
 
-// --- LEER CHISMES CON ANUNCIOS INYECTADOS ---
+// --- FUNCIÓN PARA RE-EJECUTAR SCRIPTS DE ANUNCIOS ---
+function cargarAds() {
+    const ads = document.querySelectorAll('.ad-inline script');
+    ads.forEach(oldScript => {
+        const newScript = document.createElement("script");
+        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+    });
+}
+
+// --- LEER CHISMES CON ANUNCIOS ---
 async function leerSecretos() {
     const { data: secretos } = await _supabase
         .from('secretos')
@@ -77,7 +88,6 @@ async function leerSecretos() {
         secretos.forEach((s, index) => {
             const yaVoto = localStorage.getItem(`voto_${s.id}`);
             
-            // Render chisme normal
             htmlFinal += `
                 <div class="card">
                     <p>${s.contenido}</p>
@@ -90,20 +100,18 @@ async function leerSecretos() {
                     </div>
                 </div>`;
 
-            // --- INYECTAR ANUNCIO NATIVE CADA 3 CHISMES ---
             if ((index + 1) % 3 === 0) {
                 htmlFinal += `
                     <div class="ad-inline" style="padding: 15px; border-bottom: 1px solid var(--border-color); text-align: center; background: #0a0a0a;">
                         <small style="color: #71767b; display: block; margin-bottom: 10px; font-size: 10px;">PUBLICIDAD</small>
-                        
                         <script async="async" data-cfasync="false" src="//pl16441576.highrevenuegate.com/22e5c3e32301ad5e2fdcfd392d705a30/invoke.js"></script>
                         <div id="container-22e5c3e32301ad5e2fdcfd392d705a30"></div>
-                        
                     </div>`;
             }
         });
 
         container.innerHTML = htmlFinal;
+        cargarAds(); // <--- IMPORTANTE: Esto despierta los anuncios
     }
 }
 
