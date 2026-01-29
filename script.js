@@ -1,5 +1,5 @@
-const SUPABASE_URL = "TU_URL_DE_SUPABASE";
-const SUPABASE_KEY = "TU_ANON_KEY_DE_SUPABASE";
+const SUPABASE_URL = "https://ksqrflkejlpojqhyktwf.supabase.co";
+const SUPABASE_KEY = "sb_publishable_uFWqkx-ygAhFBS5Z_va8tg_qXi7z1QV";
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const input = document.getElementById('secretoInput');
@@ -12,10 +12,10 @@ const bannedWords = ["pornografía infantil", "cp", "enlace-peligroso.com"];
 async function enviarSecreto() {
     const texto = input.value.trim();
 
-    // 1. Validar que no esté vacío
+    // Validar que no esté vacío
     if(!texto) return alert("Escribe algo, no seas tímido.");
 
-    // 2. Filtro de palabras prohibidas e links
+    // Filtro de palabras prohibidas e links
     const tieneIlegal = bannedWords.some(palabra => texto.toLowerCase().includes(palabra));
     const tieneLink = /(http|https|www)/i.test(texto);
 
@@ -23,7 +23,7 @@ async function enviarSecreto() {
         return alert("Contenido prohibido o links no permitidos.");
     }
 
-    // 3. Enviar a Supabase (Tabla: secretos, Columna: contenido)
+    // Enviar a Supabase (Tabla: secretos, Columna: contenido)
     const { data, error } = await supabase
         .from('secretos')
         .insert([{ contenido: texto }]);
