@@ -2,12 +2,11 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>TuChismeNuevo | Confesiones Anónimas</title>
     <link rel="stylesheet" href="./styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
 </head>
 <body>
 
@@ -17,7 +16,6 @@
             <p>Al entrar a <b>TuChismeNuevo</b>, aceptas que:</p>
             <ul>
                 <li>El contenido es anónimo y bajo tu propia responsabilidad.</li>
-                <li>contenido de odio es permitido a excepcion de pornografi infantil, zoofilia o cualquier tipo de actividad sexual en contra del proceso reproductivo natural humano</li>
                 <li>Solo puedes reaccionar una vez por chisme.</li>
             </ul>
             <div class="modal-buttons">
@@ -28,16 +26,21 @@
     </div>
 
     <header>
-        <h1>TuChisme<span class="bárbaro">Nuevo</span></h1>
-        <p class="warning">bienvenido (a) solo disfruta del chisme</p>
+        <div class="header-top">
+            <h1>TuChisme<span class="bárbaro">Nuevo</span></h1>
+            <button id="menu-toggle" class="menu-btn">☰</button>
+        </div>
+        
+        <nav id="side-menu" class="nav-menu">
+            <p class="warning">Bienvenido (a) solo disfruta del chisme.</p>
+            <button id="ver-politicas-btn" class="btn-link">Ver Políticas de Uso</button>
+        </nav>
     </header>
 
     <main>
         <section id="form-area">
             <textarea id="secretoInput" placeholder="¿Qué está pasando? (Suelta tu chisme...)"></textarea>
-            
             <div id="captcha-container" class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div>
-            
             <div class="form-footer">
                 <button id="enviarBtn">Publicar</button>
             </div>
