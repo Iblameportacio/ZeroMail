@@ -2,30 +2,32 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>TuSecreto 2.0 | Confesiones Anónimas</title>
-    <link rel="stylesheet" href="styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TuChismeNuevo | Confesiones Anónimas</title>
+    <link rel="stylesheet" href="./style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <header>
         <h1>TuChisme<span class="bárbaro">Nuevo</span></h1>
-        <p>Aviso. no aseguramos que el contenido publicado por os usuarios sea 100% real o seguro, lo que se sube es totalmente anonimo 
-            y queda bajo su responsabilidad en que creer, solo si acepta esto puede usar el sitio   .</p>
+        <p class="warning">Aviso: Lo que se sube es totalmente anónimo y bajo tu responsabilidad.</p>
     </header>
 
     <main>
         <section id="form-area">
-            <textarea id="secretoInput" placeholder="Suelta tu secreto aquí..."></textarea>
-            <button id="enviarBtn">Publicar Anónimamente</button>
+            <textarea id="secretoInput" placeholder="Suelta tu secreto más bárbaro aquí..."></textarea>
+            <div class="form-footer">
+                <button id="enviarBtn">Publicar Anónimamente</button>
+            </div>
         </section>
 
         <hr>
 
         <section id="secretos-container">
-            <p>Cargando secretos bárbaros...</p>
+            <div class="loading">Cargando secretos bárbaros...</div>
         </section>
     </main>
 
-    <script src="script.js"></script>
+    <script src="./script.js"></script>
 </body>
 </html>
