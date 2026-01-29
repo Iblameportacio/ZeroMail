@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TuChismeNuevo | Confesiones Anónimas</title>
-    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./style.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
 
@@ -16,7 +17,7 @@
             <ul>
                 <li>El contenido es anónimo y bajo tu propia responsabilidad.</li>
                 <li>No se permite contenido ilegal ni enlaces maliciosos.</li>
-                <li>El sistema filtrará automáticamente palabras prohibidas.</li>
+                <li>Solo puedes reaccionar una vez por chisme.</li>
             </ul>
             <div class="modal-buttons">
                 <button id="btn-aceptar" class="btn-primary">Aceptar y Entrar</button>
@@ -33,6 +34,9 @@
     <main>
         <section id="form-area">
             <textarea id="secretoInput" placeholder="¿Qué está pasando? (Suelta tu chisme...)"></textarea>
+            
+            <div id="captcha-container" class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div>
+            
             <div class="form-footer">
                 <button id="enviarBtn">Publicar</button>
             </div>
