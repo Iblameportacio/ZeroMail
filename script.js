@@ -7,7 +7,9 @@ const btn = document.getElementById('enviarBtn');
 const container = document.getElementById('secretos-container');
 const fotoInput = document.getElementById('fotoInput');
 
-// LÓGICA DEL MODA
+let comunidadActual = 'general';
+
+// --- MODAL ---
 const modal = document.getElementById('modal-politicas');
 const btnAceptar = document.getElementById('btn-aceptar');
 const btnRechazar = document.getElementById('btn-rechazar');
@@ -21,11 +23,30 @@ btnAceptar.onclick = () => {
     modal.style.display = 'none';
 };
 
-btnRechazar.onclick = () => {
-    window.location.href = "https://google.com";
-};
+btnRechazar.onclick = () => window.location.href = "https://google.com";
 
-// COMPRESIÓN DE IMAGEN
+// --- COMUNIDADES ---
+async function cambiarComunidad(cat) {
+    comunidadActual = cat;
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        if(b.innerText.toLowerCase().includes(cat) || (cat === 'general' && b.innerText.includes('Inicio'))) {
+            b.classList.add('active');
+        }
+    });
+    
+    // Cambiar placeholders dinámicos
+    const ph = {
+        'general': '¿Qué está pasando?',
+        'musica': 'Comparte tu playlist o canción favorita...',
+        'tech': '¿Qué hay de nuevo en el mundo tech?'
+    };
+    input.placeholder = ph[cat] || ph['general'];
+    
+    await leerSecretos();
+}
+
+// --- COMPRESIÓN ---
 async function comprimirImagen(archivo) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -35,38 +56,24 @@ async function comprimirImagen(archivo) {
             img.src = e.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800; // Resolución económica
+                const MAX_WIDTH = 800;
                 let width = img.width;
                 let height = img.height;
-
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
-                }
-                canvas.width = width;
-                canvas.height = height;
+                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                canvas.width = width; canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                // Convertimos a WebP calidad 0.7 para ahorrar espacio extremo
                 canvas.toBlob((blob) => resolve(blob), 'image/webp', 0.7);
             };
         };
     });
 }
 
-// LIMPIEZA AUTOMÁTICA (Máximo 50 mensajes)
+// --- LIMPIEZA ---
 async function mantenerBaseLigera() {
-    const { count } = await _supabase
-        .from('secretos')
-        .select('*', { count: 'exact', head: true });
-
-    if (count > 50) { // Límite de 50 para ahorrar espacio
-        const { data: viejos } = await _supabase
-            .from('secretos')
-            .select('id')
-            .order('created_at', { ascending: true })
-            .limit(20); // Borra los 20 más antiguos si se pasa
-
+    const { count } = await _supabase.from('secretos').select('*', { count: 'exact', head: true });
+    if (count > 50) {
+        const { data: viejos } = await _supabase.from('secretos').select('id').order('created_at', { ascending: true }).limit(20);
         const ids = viejos.map(v => v.id);
         await _supabase.from('secretos').delete().in('id', ids);
     }
@@ -75,52 +82,44 @@ async function mantenerBaseLigera() {
 // --- REACCIONES ---
 async function reaccionar(id, valorActual, columna) {
     if (localStorage.getItem(`voto_${id}`)) return alert("Ya reaccionaste, broski.");
-
-    const { error } = await _supabase
-        .from('secretos')
-        .update({ [columna]: (valorActual || 0) + 1 })
-        .eq('id', id);
-
+    const { error } = await _supabase.from('secretos').update({ [columna]: (valorActual || 0) + 1 }).eq('id', id);
     if (!error) {
         localStorage.setItem(`voto_${id}`, 'true');
         await leerSecretos();
     }
 }
 
-// ENVIAR CON MULTIMEDIA
+// --- ENVIAR ---
 async function enviarSecreto() {
     const texto = input.value.trim();
     const captchaRes = turnstile.getResponse();
     const file = fotoInput.files[0];
     
     if (!captchaRes) return alert("Completa el captcha.");
-    if (!texto && !file) return alert("Escribe algo o sube una imagen.");
+    if (!texto && !file) return alert("Escribe algo...");
 
     btn.disabled = true;
     btn.innerText = "Enviando...";
     let urlFoto = null;
 
     try {
-        // Subida de imagen al bucketimagenes
         if (file) {
             const fotoComprimida = await comprimirImagen(file);
             const fileName = `${Date.now()}.webp`;
-            
-            const { data, error: uploadError } = await _supabase.storage
-                .from('imagenes')
-                .upload(fileName, fotoComprimida);
-
+            const { data, error: uploadError } = await _supabase.storage.from('imagenes').upload(fileName, fotoComprimida);
             if (!uploadError) {
-                const { data: urlData } = _supabase.storage
-                    .from('imagenes')
-                    .getPublicUrl(fileName);
+                const { data: urlData } = _supabase.storage.from('imagenes').getPublicUrl(fileName);
                 urlFoto = urlData.publicUrl;
             }
         }
 
-        const { error } = await _supabase
-            .from('secretos')
-            .insert([{ contenido: texto, imagen_url: urlFoto, likes: 0, dislikes: 0 }]);
+        const { error } = await _supabase.from('secretos').insert([{ 
+            contenido: texto, 
+            imagen_url: urlFoto, 
+            categoria: comunidadActual, // <--- GUARDAMOS CATEGORÍA
+            likes: 0, 
+            dislikes: 0 
+        }]);
 
         if (!error) {
             input.value = "";
@@ -130,15 +129,10 @@ async function enviarSecreto() {
             await mantenerBaseLigera();
             await leerSecretos();
         }
-    } catch (e) {
-        console.error(e);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Publicar";
-    }
+    } catch (e) { console.error(e); } 
+    finally { btn.disabled = false; btn.innerText = "Publicar"; }
 }
 
-// FUNCIoN PARA REEJECUTAR SCRIPTS DE ANUNCIOS
 function cargarAds() {
     const ads = document.querySelectorAll('.ad-inline script');
     ads.forEach(oldScript => {
@@ -149,16 +143,18 @@ function cargarAds() {
     });
 }
 
-// LEER MENSAJES
+// --- LEER CON FILTRO ---
 async function leerSecretos() {
-    const { data: secretos } = await _supabase
-        .from('secretos')
-        .select('*')
-        .order('created_at', { ascending: false });
+    let consulta = _supabase.from('secretos').select('*');
+    
+    if (comunidadActual !== 'general') {
+        consulta = consulta.eq('categoria', comunidadActual);
+    }
+
+    const { data: secretos } = await consulta.order('created_at', { ascending: false });
     
     if (secretos) {
         let htmlFinal = "";
-        
         secretos.forEach((s, index) => {
             const yaVoto = localStorage.getItem(`voto_${s.id}`);
             const imgHtml = s.imagen_url ? `<img src="${s.imagen_url}" class="card-img" style="width:100%; border-radius:8px; margin:10px 0;">` : "";
@@ -176,17 +172,15 @@ async function leerSecretos() {
                     </div>
                 </div>`;
 
-            // Anuncio Native cada 3 mensajes
             if ((index + 1) % 3 === 0) {
                 htmlFinal += `
                     <div class="ad-inline" style="padding: 15px; border-bottom: 1px solid var(--border-color); text-align: center; background: #0a0a0a;">
-                        <small style="color: #71767b; display: block; margin-bottom: 10px; font-size: 10px;">PUBLICIDAD</small>
+                        <small style="color: #71767b; display: block; margin-bottom: 5px; font-size: 10px;">PUBLICIDAD</small>
                         <script async="async" data-cfasync="false" src="//pl16441576.highrevenuegate.com/22e5c3e32301ad5e2fdcfd392d705a30/invoke.js"></script>
                         <div id="container-22e5c3e32301ad5e2fdcfd392d705a30"></div>
                     </div>`;
             }
         });
-
         container.innerHTML = htmlFinal;
         cargarAds();
     }
