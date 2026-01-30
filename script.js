@@ -25,6 +25,15 @@ btnAceptar.onclick = () => {
 
 btnRechazar.onclick = () => window.location.href = "https://google.com";
 
+// --- SEGURIDAD: FUNCIÓN ANTI-HACKERS ---
+// Esta función convierte <script> en texto inofensivo
+function escaparHTML(str) {
+    if (!str) return "";
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 // --- COMUNIDADES ---
 async function cambiarComunidad(cat) {
     comunidadActual = cat;
@@ -35,7 +44,6 @@ async function cambiarComunidad(cat) {
         }
     });
     
-    // Cambiar placeholders dinámicos
     const ph = {
         'general': '¿Qué está pasando?',
         'musica': 'Comparte tu playlist o canción favorita...',
@@ -69,16 +77,6 @@ async function comprimirImagen(archivo) {
     });
 }
 
-// --- LIMPIEZA ---
-async function mantenerBaseLigera() {
-    const { count } = await _supabase.from('secretos').select('*', { count: 'exact', head: true });
-    if (count > 50) {
-        const { data: viejos } = await _supabase.from('secretos').select('id').order('created_at', { ascending: true }).limit(20);
-        const ids = viejos.map(v => v.id);
-        await _supabase.from('secretos').delete().in('id', ids);
-    }
-}
-
 // --- REACCIONES ---
 async function reaccionar(id, valorActual, columna) {
     if (localStorage.getItem(`voto_${id}`)) return alert("Ya reaccionaste, broski.");
@@ -104,11 +102,11 @@ async function enviarSecreto() {
 
     try {
         if (file) {
-            const fotoComprimida = await comprimirImagen(file);
-            const fileName = `${Date.now()}.webp`;
-            const { data, error: uploadError } = await _supabase.storage.from('imagenes').upload(fileName, fotoComprimida);
+            const { data: uploadData, error: uploadError } = await _supabase.storage
+                .from('imagenes')
+                .upload(`${Date.now()}.webp`, await comprimirImagen(file));
             if (!uploadError) {
-                const { data: urlData } = _supabase.storage.from('imagenes').getPublicUrl(fileName);
+                const { data: urlData } = _supabase.storage.from('imagenes').getPublicUrl(uploadData.path);
                 urlFoto = urlData.publicUrl;
             }
         }
@@ -116,7 +114,7 @@ async function enviarSecreto() {
         const { error } = await _supabase.from('secretos').insert([{ 
             contenido: texto, 
             imagen_url: urlFoto, 
-            categoria: comunidadActual, // <--- GUARDAMOS CATEGORÍA
+            categoria: comunidadActual,
             likes: 0, 
             dislikes: 0 
         }]);
@@ -126,7 +124,6 @@ async function enviarSecreto() {
             fotoInput.value = "";
             document.getElementById('preview-container').style.display = 'none';
             turnstile.reset();
-            await mantenerBaseLigera();
             await leerSecretos();
         }
     } catch (e) { console.error(e); } 
@@ -134,22 +131,21 @@ async function enviarSecreto() {
 }
 
 function cargarAds() {
-    const ads = document.querySelectorAll('.ad-inline script');
-    ads.forEach(oldScript => {
-        const newScript = document.createElement("script");
-        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-        oldScript.parentNode.replaceChild(newScript, oldScript);
+    const ads = document.querySelectorAll('.ad-inline-active');
+    ads.forEach(container => {
+        if (container.getAttribute('data-loaded')) return;
+        const script = document.createElement("script");
+        script.src = "//pl16441576.highrevenuegate.com/22e5c3e32301ad5e2fdcfd392d705a30/invoke.js";
+        script.async = true;
+        container.appendChild(script);
+        container.setAttribute('data-loaded', 'true');
     });
 }
 
-// --- LEER CON FILTRO ---
+// --- LEER CON FILTRO Y SEGURIDAD ---
 async function leerSecretos() {
     let consulta = _supabase.from('secretos').select('*');
-    
-    if (comunidadActual !== 'general') {
-        consulta = consulta.eq('categoria', comunidadActual);
-    }
+    if (comunidadActual !== 'general') consulta = consulta.eq('categoria', comunidadActual);
 
     const { data: secretos } = await consulta.order('created_at', { ascending: false });
     
@@ -159,9 +155,12 @@ async function leerSecretos() {
             const yaVoto = localStorage.getItem(`voto_${s.id}`);
             const imgHtml = s.imagen_url ? `<img src="${s.imagen_url}" class="card-img" style="width:100%; border-radius:8px; margin:10px 0;">` : "";
             
+            // ESCAPAMOS EL CONTENIDO ANTES DE MOSTRARLO
+            const contenidoSeguro = escaparHTML(s.contenido);
+
             htmlFinal += `
                 <div class="card">
-                    <p>${s.contenido}</p>
+                    <p>${contenidoSeguro}</p>
                     ${imgHtml}
                     <div class="footer-card">
                         <small>${new Date(s.created_at).toLocaleString()}</small>
@@ -172,11 +171,10 @@ async function leerSecretos() {
                     </div>
                 </div>`;
 
-            if ((index + 1) % 3 === 0) {
+            if ((index + 1) % 4 === 0) {
                 htmlFinal += `
-                    <div class="ad-inline" style="padding: 15px; border-bottom: 1px solid var(--border-color); text-align: center; background: #0a0a0a;">
-                        <small style="color: #71767b; display: block; margin-bottom: 5px; font-size: 10px;">PUBLICIDAD</small>
-                        <script async="async" data-cfasync="false" src="//pl16441576.highrevenuegate.com/22e5c3e32301ad5e2fdcfd392d705a30/invoke.js"></script>
+                    <div class="ad-inline-active" style="padding: 15px; text-align: center;">
+                        <small style="color: #71767b; font-size: 10px;">PUBLICIDAD</small>
                         <div id="container-22e5c3e32301ad5e2fdcfd392d705a30"></div>
                     </div>`;
             }
