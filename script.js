@@ -49,14 +49,10 @@ function toggleRespuestas(id) {
 // --- SISTEMA DE RESPUESTAS (HILOS ANIDADOS) ---
 function prepararRespuesta(id, mencionId = null) {
     respondiendoA = id;
-    
-    // Limpiamos el input y cambiamos el placeholder sin mostrar IDs
-    input.value = ""; 
-    input.placeholder = mencionId ? "Escribe tu respuesta al comentario..." : "Escribe tu respuesta al post...";
-    
+    input.value = mencionId ? `>>${mencionId} ` : ""; // El >>ID ayuda al sistema a saber que es anidada
+    input.placeholder = mencionId ? "Respondiendo al comentario..." : "Respondiendo al post...";
     input.focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    
     // Sistema del botón cancelar (se mantiene igual)
     if(!document.getElementById('btn-cancelar-reply')) {
         const cancel = document.createElement('span');
@@ -166,17 +162,20 @@ async function leerSecretos() {
         principales.forEach((s, index) => {
             const yaVoto = localStorage.getItem(`voto_${s.id}`);
             const imgHtml = s.imagen_url ? `<img src="${s.imagen_url}" class="card-img">` : "";
-            const susRespuestas = respuestas.filter(r => r.padre_id === s.id);
+            const susRespuestas = respuestas.filter(r => r.padre_id === s.id).reverse(); // reverse para orden cronológico en hilos
             let respuestasHtml = "";
             
             susRespuestas.forEach(r => {
                 const rImg = r.imagen_url ? `<img src="${r.imagen_url}" class="card-img-reply">` : "";
                 const rVoto = localStorage.getItem(`voto_${r.id}`);
                 
-                // ELIMINADO: <small class="post-id">ID: #${r.id}</small>
+                // TRUCO: Si el texto contiene ">>", es una respuesta a otra respuesta (estilo X)
+                const esAnidada = r.contenido.includes('>>');
+                const claseAnidada = esAnidada ? 'nested-reply' : '';
+
                 respuestasHtml += `
-                    <div class="reply-card">
-                        <p>${escaparHTML(r.contenido)}</p>
+                    <div class="reply-card ${claseAnidada}">
+                        <p>${escaparHTML(r.contenido).replace(/&gt;&gt;\d+/g, '<span class="mention">$&</span>')}</p>
                         ${rImg}
                         <div class="footer-card">
                             <small>${new Date(r.created_at).toLocaleString()}</small>
@@ -192,7 +191,6 @@ async function leerSecretos() {
                 ? `<button id="btn-toggle-${s.id}" class="toggle-btn" onclick="toggleRespuestas(${s.id})">Ver ${susRespuestas.length} respuestas</button>` 
                 : "";
 
-            // ELIMINADO: <small class="post-id">ID: #${s.id}</small>
             htmlFinal += `
                 <div class="post-group">
                     <div class="card">
