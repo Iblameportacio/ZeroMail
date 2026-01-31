@@ -41,10 +41,10 @@ function toggleRespuestas(id) {
     const btnToggle = document.getElementById(`btn-toggle-${id}`);
     if (div.style.display === "none") {
         div.style.display = "block";
-        btnToggle.innerText = "🔼 Ocultar respuestas";
+        btnToggle.innerText = "Ocultar respuestas";
     } else {
         div.style.display = "none";
-        btnToggle.innerText = `🔽 Ver respuestas`;
+        btnToggle.innerText = `Ver respuestas`;
     }
 }
 
