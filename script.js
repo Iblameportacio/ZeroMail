@@ -9,7 +9,7 @@ const fotoInput = document.getElementById('fotoInput');
 
 let comunidadActual = 'general';
 let ultimaPublicacion = 0;
-let respondiendoA = null; // ID del post que estamos comentando
+let respondiendoA = null;
 
 // --- MODAL ---
 const modal = document.getElementById('modal-politicas');
@@ -35,6 +35,19 @@ function escaparHTML(str) {
     return div.innerHTML;
 }
 
+// --- TOGGLE DE RESPUESTAS ---
+function toggleRespuestas(id) {
+    const div = document.getElementById(`respuestas-${id}`);
+    const btnToggle = document.getElementById(`btn-toggle-${id}`);
+    if (div.style.display === "none") {
+        div.style.display = "block";
+        btnToggle.innerText = "🔼 Ocultar respuestas";
+    } else {
+        div.style.display = "none";
+        btnToggle.innerText = `🔽 Ver respuestas`;
+    }
+}
+
 // --- SISTEMA DE RESPUESTAS ---
 function prepararRespuesta(id) {
     respondiendoA = id;
@@ -42,12 +55,11 @@ function prepararRespuesta(id) {
     input.focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    // Crear botón para cancelar respuesta si no existe
     if(!document.getElementById('btn-cancelar-reply')) {
         const cancel = document.createElement('span');
         cancel.id = 'btn-cancelar-reply';
-        cancel.innerHTML = " [✖ Cancelar respuesta]";
-        cancel.style = "color:red; cursor:pointer; font-size:12px; font-weight:bold;";
+        cancel.innerHTML = " [✖ Cancelar]";
+        cancel.className = "cancelar-text";
         cancel.onclick = () => {
             respondiendoA = null;
             input.placeholder = "¿Qué está pasando?";
@@ -111,7 +123,7 @@ async function enviarSecreto() {
     const file = fotoInput.files[0];
 
     if (ahora - ultimaPublicacion < 10000) return alert("Espera 10 segundos.");
-    if (texto.length > 1000) return alert("Muy largo.");
+    if (texto.length > 1000) return alert("Muy largo (máx 1000).");
     if (!captchaRes || captchaRes.length < 20) return alert("Haz el captcha.");
     if (!texto && !file) return alert("Escribe algo...");
 
@@ -133,7 +145,7 @@ async function enviarSecreto() {
             contenido: texto, 
             imagen_url: urlFoto, 
             categoria: comunidadActual,
-            padre_id: respondiendoA, // Guardamos la referencia al padre
+            padre_id: respondiendoA,
             likes: 0, 
             dislikes: 0 
         }]);
@@ -165,7 +177,7 @@ function cargarAds() {
     });
 }
 
-// --- LEER CON HILOS ---
+// --- LEER CON HILOS E IMÁGENES ---
 async function leerSecretos() {
     const { data: todos } = await _supabase.from('secretos').select('*').order('created_at', { ascending: false });
     
@@ -176,21 +188,31 @@ async function leerSecretos() {
 
         principales.forEach((s, index) => {
             const yaVoto = localStorage.getItem(`voto_${s.id}`);
-            const imgHtml = s.imagen_url ? `<img src="${s.imagen_url}" class="card-img" style="width:100%; border-radius:8px; margin:10px 0;">` : "";
+            const imgHtml = s.imagen_url ? `<img src="${s.imagen_url}" class="card-img">` : "";
             
-            // Filtrar respuestas para este post
             const susRespuestas = respuestas.filter(r => r.padre_id === s.id);
             let respuestasHtml = "";
+            
             susRespuestas.forEach(r => {
+                const rImg = r.imagen_url ? `<img src="${r.imagen_url}" class="card-img-reply">` : "";
+                const rVoto = localStorage.getItem(`voto_${r.id}`);
                 respuestasHtml += `
-                    <div class="reply-card" style="margin-left:25px; margin-top:5px; padding:10px; border-left:2px solid #333; background:#111; border-radius:0 8px 8px 0;">
-                        <p style="font-size:0.9em; margin:0;">${escaparHTML(r.contenido)}</p>
-                        <small style="color:#555; font-size:0.7em;">${new Date(r.created_at).toLocaleString()}</small>
+                    <div class="reply-card">
+                        <p>${escaparHTML(r.contenido)}</p>
+                        ${rImg}
+                        <div class="footer-card">
+                            <small>${new Date(r.created_at).toLocaleString()}</small>
+                            <button class="like-btn" ${rVoto ? 'disabled' : ''} onclick="reaccionar(${r.id}, 'likes')">🔥 ${r.likes || 0}</button>
+                        </div>
                     </div>`;
             });
 
+            const btnToggle = susRespuestas.length > 0 
+                ? `<button id="btn-toggle-${s.id}" class="toggle-btn" onclick="toggleRespuestas(${s.id})">🔽 Ver ${susRespuestas.length} respuestas</button>` 
+                : "";
+
             htmlFinal += `
-                <div class="post-group" style="margin-bottom:20px;">
+                <div class="post-group">
                     <div class="card">
                         <p>${escaparHTML(s.contenido)}</p>
                         ${imgHtml}
@@ -202,11 +224,14 @@ async function leerSecretos() {
                             </div>
                         </div>
                     </div>
-                    <div class="replies">${respuestasHtml}</div>
+                    ${btnToggle}
+                    <div id="respuestas-${s.id}" class="replies-container" style="display:none;">
+                        ${respuestasHtml}
+                    </div>
                 </div>`;
 
             if ((index + 1) % 4 === 0) {
-                htmlFinal += `<div class="ad-inline-active" style="padding: 15px; text-align: center;"></div>`;
+                htmlFinal += `<div class="ad-inline-active"></div>`;
             }
         });
         container.innerHTML = htmlFinal || '<p style="text-align:center;">No hay secretos...</p>';
