@@ -49,15 +49,15 @@ function toggleRespuestas(id) {
 // --- SISTEMA DE RESPUESTAS (HILOS ANIDADOS) ---
 function prepararRespuesta(id, mencionId = null) {
     respondiendoA = id;
-    if (mencionId) {
-        input.value = `>>${mencionId} `; 
-        input.placeholder = `Respondiendo al comentario #${mencionId}...`;
-    } else {
-        input.placeholder = `Respondiendo al post #${id}...`;
-    }
+    
+    // Limpiamos el input y cambiamos el placeholder sin mostrar IDs
+    input.value = ""; 
+    input.placeholder = mencionId ? "Escribe tu respuesta al comentario..." : "Escribe tu respuesta al post...";
+    
     input.focus();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
+    // Sistema del botón cancelar (se mantiene igual)
     if(!document.getElementById('btn-cancelar-reply')) {
         const cancel = document.createElement('span');
         cancel.id = 'btn-cancelar-reply';
