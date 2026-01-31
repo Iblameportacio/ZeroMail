@@ -8,7 +8,7 @@ const container = document.getElementById('secretos-container');
 const fotoInput = document.getElementById('fotoInput');
 
 let comunidadActual = 'general';
-let ultimaPublicacion = 0; // Para el control de spam (enfriamiento)
+let ultimaPublicacion = 0;
 
 // --- MODAL ---
 const modal = document.getElementById('modal-politicas');
@@ -77,11 +77,11 @@ async function comprimirImagen(archivo) {
     });
 }
 
-// --- REACCIONES BLINDADAS (Usa la función RPC del Back-end) ---
+// --- REACCIONES BLINDADAS ---
 async function reaccionar(id, columna) {
     if (localStorage.getItem(`voto_${id}`)) return alert("Ya reaccionaste, broski.");
     
-    // Llamamos a la función del servidor para que el hacker no pueda enviar números locos
+    // Si la función RPC falla, es porque no la has creado en el SQL Editor de Supabase
     const { error } = await _supabase.rpc('incrementar_reaccion', { 
         row_id: id, 
         columna_nombre: columna 
@@ -91,7 +91,8 @@ async function reaccionar(id, columna) {
         localStorage.setItem(`voto_${id}`, 'true');
         await leerSecretos();
     } else {
-        console.error("Error en reacción:", error);
+        console.error("Error en reacción. ¿Ya creaste la función en el SQL Editor?", error);
+        alert("Error técnico con los likes. Inténtalo más tarde.");
     }
 }
 
@@ -102,18 +103,20 @@ async function enviarSecreto() {
     const captchaRes = turnstile.getResponse();
     const file = fotoInput.files[0];
 
-    // 1. Validación de tiempo (Anti-Spam)
+    // 1. Cooldown
     if (ahora - ultimaPublicacion < 10000) {
-        return alert("¡Tranquilo broski! Espera 10 segundos entre mensajes.");
+        return alert("¡Tranquilo! Espera 10 segundos entre mensajes.");
     }
 
-    // 2. Validación de tamaño (Back-end fallback)
+    // 2. Tamaño de texto
     if (texto.length > 1000) {
-        return alert("El mensaje es muy largo (máximo 1000 caracteres).");
+        return alert("Mensaje demasiado largo (máx 1000 caracteres).");
     }
 
-    // 3. Captcha obligatorio
-    if (!captchaRes) return alert("Por favor, completa el captcha.");
+    // 3. CAPTCHA REAL (Verificación de longitud de token)
+    if (!captchaRes || captchaRes.length < 20) {
+        return alert("Por favor, completa el captcha correctamente.");
+    }
 
     if (!texto && !file) return alert("Escribe algo...");
 
@@ -144,14 +147,14 @@ async function enviarSecreto() {
             input.value = "";
             fotoInput.value = "";
             document.getElementById('preview-container').style.display = 'none';
-            ultimaPublicacion = ahora; // Reset del cooldown
+            ultimaPublicacion = ahora;
             
-            // RESET DEL CAPTCHA (Para que no lo reutilicen)
+            // RESET CRÍTICO DEL CAPTCHA
             turnstile.reset();
             
             await leerSecretos();
         } else {
-            alert("Error al enviar. Quizás el mensaje es muy largo.");
+            alert("Error al enviar. Verifica tu conexión.");
             turnstile.reset();
         }
     } catch (e) { 
@@ -167,6 +170,10 @@ function cargarAds() {
     const ads = document.querySelectorAll('.ad-inline-active');
     ads.forEach(container => {
         if (container.getAttribute('data-loaded')) return;
+        
+        // Limpiar contenedor antes de cargar para evitar duplicados
+        container.innerHTML = '<small style="color: #71767b; font-size: 10px;">PUBLICIDAD</small><div id="container-22e5c3e32301ad5e2fdcfd392d705a30"></div>';
+        
         const script = document.createElement("script");
         script.src = "//pl16441576.highrevenuegate.com/22e5c3e32301ad5e2fdcfd392d705a30/invoke.js";
         script.async = true;
@@ -175,7 +182,7 @@ function cargarAds() {
     });
 }
 
-// --- LEER CON FILTRO Y SEGURIDAD ---
+// --- LEER ---
 async function leerSecretos() {
     let consulta = _supabase.from('secretos').select('*');
     if (comunidadActual !== 'general') consulta = consulta.eq('categoria', comunidadActual);
@@ -202,16 +209,15 @@ async function leerSecretos() {
                     </div>
                 </div>`;
 
+            // Insertar anuncio cada 4 tarjetas
             if ((index + 1) % 4 === 0) {
-                htmlFinal += `
-                    <div class="ad-inline-active" style="padding: 15px; text-align: center;">
-                        <small style="color: #71767b; font-size: 10px;">PUBLICIDAD</small>
-                        <div id="container-22e5c3e32301ad5e2fdcfd392d705a30"></div>
-                    </div>`;
+                htmlFinal += `<div class="ad-inline-active" style="padding: 15px; text-align: center;"></div>`;
             }
         });
-        container.innerHTML = htmlFinal || '<p style="text-align:center;">No hay secretos...</p>';
-        setTimeout(cargarAds, 500);
+        container.innerHTML = htmlFinal || '<p style="text-align:center;">No hay secretos todavía...</p>';
+        
+        // Ejecutar ads después de que el DOM esté listo
+        setTimeout(cargarAds, 600);
     }
 }
 
