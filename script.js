@@ -9,7 +9,7 @@ const fotoInput = document.getElementById('fotoInput');
 
 let comunidadActual = 'general';
 let respondiendoA = null;
-let tokenCaptcha = null; // Guardará la validación
+let tokenCaptcha = null;
 
 // --- SEGURIDAD CAPTCHA ---
 function captchaResuelto(token) { tokenCaptcha = token; btn.disabled = false; }
@@ -19,6 +19,7 @@ function captchaExpirado() { tokenCaptcha = null; btn.disabled = true; }
 function citarPost(id) {
     input.value += (input.value ? '\n' : '') + `>>${id} `;
     input.focus();
+    // Si no estamos respondiendo a nadie, esto marca el hilo principal
     if (!respondiendoA) prepararRespuesta(id);
 }
 
@@ -39,14 +40,20 @@ function escaparHTML(str) {
 // --- PREVIEW IMAGEN ---
 function mostrarPreview(input) {
     const preview = document.getElementById('img-preview');
-    const container = document.getElementById('preview-container');
+    const containerPreview = document.getElementById('preview-container');
     if (input.files && input.files[0]) {
         const reader = new FileReader();
-        reader.onload = (e) => { preview.src = e.target.result; container.style.display = 'block'; }
+        reader.onload = (e) => { 
+            preview.src = e.target.result; 
+            containerPreview.style.display = 'block'; 
+        }
         reader.readAsDataURL(input.files[0]);
     }
 }
-function cancelarFoto() { fotoInput.value = ""; document.getElementById('preview-container').style.display = 'none'; }
+function cancelarFoto() { 
+    fotoInput.value = ""; 
+    document.getElementById('preview-container').style.display = 'none'; 
+}
 
 function cambiarComunidad(c) {
     comunidadActual = c;
@@ -55,9 +62,9 @@ function cambiarComunidad(c) {
     leerSecretos();
 }
 
-function prepararRespuesta(id, esComentario = false) {
+function prepararRespuesta(id) {
     respondiendoA = id;
-    input.placeholder = "Escribiendo respuesta...";
+    input.placeholder = `Respondiendo al No.${id}...`;
     input.focus();
     if(!document.getElementById('btn-cancelar')) {
         const c = document.createElement('span');
@@ -65,8 +72,10 @@ function prepararRespuesta(id, esComentario = false) {
         c.innerHTML = " [✖ Cancelar]";
         c.className = "cancelar-text";
         c.onclick = () => { 
-            respondiendoA = null; input.value = ""; 
-            input.placeholder = "¿Qué está pasando?"; c.remove(); 
+            respondiendoA = null; 
+            input.value = ""; 
+            input.placeholder = "¿Qué está pasando?"; 
+            c.remove(); 
         };
         input.parentNode.insertBefore(c, input);
     }
@@ -75,19 +84,28 @@ function prepararRespuesta(id, esComentario = false) {
 async function reaccionar(id) {
     if (localStorage.getItem(`voto_${id}`)) return;
     const { error } = await _supabase.rpc('incrementar_reaccion', { row_id: id, columna_nombre: 'likes' });
-    if (!error) { localStorage.setItem(`voto_${id}`, 'true'); leerSecretos(); }
+    if (!error) { 
+        localStorage.setItem(`voto_${id}`, 'true'); 
+        leerSecretos(); 
+    }
 }
 
-// --- RENDERIZADO TIPO 4CHAN ---
+// --- RENDERIZADO TIPO 4CHAN CON CITAS DINÁMICAS ---
 async function leerSecretos() {
-    const { data } = await _supabase.from('secretos').select('*').eq('categoria', comunidadActual).order('created_at', { ascending: false });
-    if (!data) return;
+    const { data, error } = await _supabase
+        .from('secretos')
+        .select('*')
+        .eq('categoria', comunidadActual)
+        .order('created_at', { ascending: false });
+
+    if (error || !data) return;
 
     const principal = data.filter(s => !s.padre_id);
     const respuestas = data.filter(s => s.padre_id);
     
     container.innerHTML = principal.map(s => {
         const susRespuestas = respuestas.filter(r => r.padre_id === s.id).reverse();
+        
         const rHtml = susRespuestas.map(r => `
             <div class="reply-card ${r.contenido.includes('>>') ? 'nested-reply' : ''}">
                 <div class="post-header">
@@ -96,7 +114,9 @@ async function leerSecretos() {
                 </div>
                 <p>${escaparHTML(r.contenido).replace(/&gt;&gt;(\d+)/g, '<span class="mention">>>$1</span>')}</p>
                 ${r.imagen_url ? `<img src="${r.imagen_url}" class="card-img-reply">` : ''}
-                <button class="like-btn" onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
+                <div class="footer-card">
+                    <button class="like-btn" onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
+                </div>
             </div>
         `).join('');
 
@@ -107,7 +127,7 @@ async function leerSecretos() {
                         <span class="post-author">Anónimo</span>
                         <span class="post-id" onclick="citarPost(${s.id})">No.${s.id} [+]</span>
                     </div>
-                    <p>${escaparHTML(s.contenido)}</p>
+                    <p>${escaparHTML(s.contenido).replace(/&gt;&gt;(\d+)/g, '<span class="mention">>>$1</span>')}</p>
                     ${s.imagen_url ? `<img src="${s.imagen_url}" class="card-img">` : ''}
                     <div class="footer-card">
                         <button class="reply-btn" onclick="prepararRespuesta(${s.id})">💬 Responder</button>
@@ -118,6 +138,14 @@ async function leerSecretos() {
             </div>`;
     }).join('');
 }
+
+// --- REALTIME: ESCUCHAR CAMBIOS (Para que la red esté viva) ---
+_supabase
+  .channel('public:secretos')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'secretos' }, () => {
+    leerSecretos();
+  })
+  .subscribe();
 
 // --- ENVÍO CON VALIDACIÓN ---
 btn.onclick = async () => {
@@ -140,21 +168,26 @@ btn.onclick = async () => {
         }
 
         await _supabase.from('secretos').insert([{
-            contenido: texto, categoria: comunidadActual,
-            padre_id: respondiendoA, imagen_url: urlFoto, likes: 0
+            contenido: texto, 
+            categoria: comunidadActual,
+            padre_id: respondiendoA, 
+            imagen_url: urlFoto, 
+            likes: 0
         }]);
 
         input.value = "";
         cancelarFoto();
         respondiendoA = null;
-        tokenCaptcha = null; // Reset captcha
-        turnstile.reset(); // Reiniciar el widget de Cloudflare
+        tokenCaptcha = null;
+        if(window.turnstile) turnstile.reset(); 
+        if(document.getElementById('btn-cancelar')) document.getElementById('btn-cancelar').remove();
+        input.placeholder = "¿Qué está pasando?";
         leerSecretos();
     } catch (e) {
-        alert("Error de conexión.");
+        alert("Error de conexión, intenta de nuevo.");
     } finally {
         btn.innerText = "Publicar";
-        btn.disabled = true; // Se queda bloqueado hasta el siguiente captcha
+        btn.disabled = true; 
     }
 };
 
