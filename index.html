@@ -56,9 +56,9 @@
                          data-expired-callback="captchaExpirado"></div>
                 </div>
 
-                <div class="form-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px;">
+                <div class="form-footer">
                     <input type="file" id="fotoInput" accept="image/*,video/*" style="display: none;" onchange="mostrarPreview(this)">
-                    <button type="button" onclick="document.getElementById('fotoInput').click()" style="background:none; border:none; font-size:24px; cursor:pointer;">📸</button>
+                    <button type="button" class="btn-camera" onclick="document.getElementById('fotoInput').click()">📸</button>
                     <button id="enviarBtn" disabled>Publicar</button>
                 </div>
             </section>
