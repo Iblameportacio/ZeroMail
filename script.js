@@ -19,7 +19,6 @@ function captchaExpirado() { tokenCaptcha = null; btn.disabled = true; }
 function citarPost(id) {
     input.value += (input.value ? '\n' : '') + `>>${id} `;
     input.focus();
-    // Si no estamos respondiendo a nadie, esto marca el hilo principal
     if (!respondiendoA) prepararRespuesta(id);
 }
 
@@ -71,6 +70,7 @@ function prepararRespuesta(id) {
         c.id = 'btn-cancelar';
         c.innerHTML = " [✖ Cancelar]";
         c.className = "cancelar-text";
+        c.style.cursor = "pointer";
         c.onclick = () => { 
             respondiendoA = null; 
             input.value = ""; 
@@ -90,7 +90,7 @@ async function reaccionar(id) {
     }
 }
 
-// --- RENDERIZADO TIPO 4CHAN CON CITAS DINÁMICAS ---
+// --- RENDERIZADO ---
 async function leerSecretos() {
     const { data, error } = await _supabase
         .from('secretos')
@@ -107,16 +107,14 @@ async function leerSecretos() {
         const susRespuestas = respuestas.filter(r => r.padre_id === s.id).reverse();
         
         const rHtml = susRespuestas.map(r => `
-            <div class="reply-card ${r.contenido.includes('>>') ? 'nested-reply' : ''}">
+            <div class="reply-card">
                 <div class="post-header">
                     <span class="post-author">Anónimo</span>
                     <span class="post-id" onclick="citarPost(${r.id})">No.${r.id} [+]</span>
                 </div>
                 <p>${escaparHTML(r.contenido).replace(/&gt;&gt;(\d+)/g, '<span class="mention">>>$1</span>')}</p>
                 ${r.imagen_url ? `<img src="${r.imagen_url}" class="card-img-reply">` : ''}
-                <div class="footer-card">
-                    <button class="like-btn" onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
-                </div>
+                <button class="like-btn" onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
             </div>
         `).join('');
 
@@ -139,35 +137,36 @@ async function leerSecretos() {
     }).join('');
 }
 
-// --- REALTIME: ESCUCHAR CAMBIOS (Para que la red esté viva) ---
-_supabase
-  .channel('public:secretos')
-  .on('postgres_changes', { event: '*', schema: 'public', table: 'secretos' }, () => {
-    leerSecretos();
-  })
-  .subscribe();
-
-// --- ENVÍO CON VALIDACIÓN ---
+// --- ENVÍO CORREGIDO ---
 btn.onclick = async () => {
-    if (!tokenCaptcha) { alert("Broski, resuelve el captcha primero."); return; }
+    if (!tokenCaptcha) { alert("Resuelve el captcha primero."); return; }
     
     const texto = input.value.trim();
     const file = fotoInput.files[0];
     if(!texto && !file) return;
     
     btn.disabled = true;
-    btn.innerText = "Publicando...";
+    btn.innerText = "Subiendo...";
     
     let urlFoto = null;
+
     try {
         if (file) {
-            const fileName = `${Date.now()}_${file.name}`;
-            const { error: upErr } = await _supabase.storage.from('imagenes').upload(fileName, file);
-            if (upErr) throw upErr;
-            urlFoto = _supabase.storage.from('imagenes').getPublicUrl(fileName).data.publicUrl;
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await _supabase.storage
+                .from('imagenes')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data } = _supabase.storage.from('imagenes').getPublicUrl(filePath);
+            urlFoto = data.publicUrl;
         }
 
-        await _supabase.from('secretos').insert([{
+        const { error: insertError } = await _supabase.from('secretos').insert([{
             contenido: texto, 
             categoria: comunidadActual,
             padre_id: respondiendoA, 
@@ -175,19 +174,24 @@ btn.onclick = async () => {
             likes: 0
         }]);
 
+        if (insertError) throw insertError;
+
+        // Reset total
         input.value = "";
         cancelarFoto();
         respondiendoA = null;
         tokenCaptcha = null;
-        if(window.turnstile) turnstile.reset(); 
+        if(window.turnstile) turnstile.reset();
         if(document.getElementById('btn-cancelar')) document.getElementById('btn-cancelar').remove();
         input.placeholder = "¿Qué está pasando?";
         leerSecretos();
-    } catch (e) {
-        alert("Error de conexión, intenta de nuevo.");
+
+    } catch (err) {
+        console.error("Error detallado:", err);
+        alert("Error al publicar. Revisa los permisos del Storage en Supabase.");
     } finally {
         btn.innerText = "Publicar";
-        btn.disabled = true; 
+        btn.disabled = false;
     }
 };
 
