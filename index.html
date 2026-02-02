@@ -17,7 +17,7 @@
             <ul style="text-align: left; color: var(--text-dim); font-size: 14px; margin-bottom: 20px;">
                 <li>El contenido es 100% anónimo.</li>
                 <li>No se permite contenido ilegal o spam.</li>
-                <li>Respetarás los hilos de conversación.</li>
+                <li>Límite de video: 15MB por publicación.</li>
             </ul>
             <button id="btn-aceptar" style="background: var(--accent-red); color: white; border: none; padding: 12px 25px; border-radius: 9999px; font-weight: 800; cursor: pointer; width: 100%;">Aceptar y Entrar</button>
         </div>
@@ -41,9 +41,7 @@
                 <textarea id="secretoInput" placeholder="¿Qué está pasando?" maxlength="1000"></textarea>
                 
                 <div id="preview-container" style="display:none; margin-bottom: 15px; position: relative;">
-                    <img id="img-preview" src="" style="width: 100%; border-radius: 12px; border: 1px solid var(--border-color); display: block;">
-                    <span onclick="cancelarFoto()" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 5px 10px; border-radius: 50%; cursor: pointer; font-weight: bold;">✕</span>
-                </div>
+                    </div>
 
                 <div style="margin-bottom: 15px; display: flex; justify-content: center;">
                     <div id="captcha-container" class="cf-turnstile" 
@@ -53,9 +51,9 @@
                 </div>
 
                 <div class="form-footer">
-                    <input type="file" id="fotoInput" accept="image/*" style="display: none;" onchange="mostrarPreview(this)">
+                    <input type="file" id="fotoInput" accept="image/*,video/*" style="display: none;" onchange="mostrarPreview(this)">
                     
-                    <button type="button" class="btn-icon" onclick="document.getElementById('fotoInput').click()" title="Subir imagen">📸</button>
+                    <button type="button" class="btn-icon" onclick="document.getElementById('fotoInput').click()" title="Subir multimedia">📸</button>
                     
                     <button id="enviarBtn" disabled>Publicar</button>
                 </div>
