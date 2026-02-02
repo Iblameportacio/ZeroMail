@@ -92,6 +92,7 @@ async function leerSecretos() {
                             ${renderMedia(r.imagen_url)}
                             <div class="footer-card" style="border:none; padding:0; margin-top:10px;">
                                 <button class="reply-btn" style="padding:5px 12px; font-size:11px;" onclick="prepararRespuesta(${s.id})">💬</button>
+                                <button class="like-btn" style="padding:5px 12px; font-size:11px;" onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
                             </div>
                         </div>
                     </div>
