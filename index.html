@@ -14,12 +14,12 @@
         <div class="modal-content">
             <h2>ZeroMail | Comunidad</h2>
             <p>Al entrar, aceptas que:</p>
-            <ul style="text-align: left; color: var(--text-dim); font-size: 14px; margin-bottom: 20px;">
-                <li>El contenido es 100% anónimo.</li>
-                <li>No se permite contenido ilegal o spam.</li>
-                <li>Límite de video: 15MB por publicación.</li>
+            <ul style="text-align: left; color: #71767b; font-size: 14px; margin-bottom: 20px; list-style: none; padding: 0;">
+                <li>• El contenido es 100% anónimo.</li>
+                <li>• No se permite contenido ilegal o spam.</li>
+                <li>• Límite de video: 15MB por publicación.</li>
             </ul>
-            <button id="btn-aceptar" style="background: var(--accent-red); color: white; border: none; padding: 12px 25px; border-radius: 9999px; font-weight: 800; cursor: pointer; width: 100%;">Aceptar y Entrar</button>
+            <button id="btn-aceptar">Aceptar y Entrar</button>
         </div>
     </div>
 
@@ -50,17 +50,21 @@
                          data-expired-callback="captchaExpirado"></div>
                 </div>
 
-                <div class="form-footer">
+                <div class="form-footer" style="display: flex; justify-content: space-between; align-items: center;">
                     <input type="file" id="fotoInput" accept="image/*,video/*" style="display: none;" onchange="mostrarPreview(this)">
                     
-                    <button type="button" class="btn-icon" onclick="document.getElementById('fotoInput').click()" title="Subir multimedia">📸</button>
+                    <button type="button" class="btn-icon" onclick="document.getElementById('fotoInput').click()" 
+                            style="background: none; border: none; font-size: 24px; cursor: pointer;">📸</button>
                     
-                    <button id="enviarBtn" disabled>Publicar</button>
+                    <button id="enviarBtn" disabled 
+                            style="background: #8b0000; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer;">
+                        Publicar
+                    </button>
                 </div>
             </section>
 
             <section id="secretos-container">
-                <div style="padding: 40px; text-align: center; color: var(--text-dim);">
+                <div style="padding: 40px; text-align: center; color: #71767b;">
                     Sincronizando con la red...
                 </div>
             </section>
