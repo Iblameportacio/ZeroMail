@@ -16,7 +16,7 @@
             <p>Al entrar, aceptas que:</p>
             <ul style="text-align: left; color: #71767b; font-size: 14px; margin-bottom: 20px; list-style: none; padding: 0;">
                 <li>• El contenido es 100% anónimo.</li>
-                <li>• No se permite pornografia infantil o zoofilia</li>
+                <li>• No se permite contenido pornografia infantil o zoofilia</li>
                 <li>• Límite de video: 15MB por publicación.</li>
             </ul>
             <button id="btn-aceptar">Aceptar y Entrar</button>
@@ -38,10 +38,9 @@
             </nav>
 
             <section id="form-area">
-                <textarea id="secretoInput" placeholder="¿Qué está pasando?" maxlength="1000"></textarea>
+                <div id="reply-indicator"></div> <textarea id="secretoInput" placeholder="¿Qué está pasando?" maxlength="1000"></textarea>
                 
-                <div id="preview-container" style="display:none; margin-bottom: 15px; position: relative;">
-                    </div>
+                <div id="preview-container" style="display:none; margin-bottom: 15px; position: relative;"></div>
 
                 <div style="margin-bottom: 15px; display: flex; justify-content: center;">
                     <div id="captcha-container" class="cf-turnstile" 
@@ -50,23 +49,15 @@
                          data-expired-callback="captchaExpirado"></div>
                 </div>
 
-                <div class="form-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="form-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 0 10px;">
                     <input type="file" id="fotoInput" accept="image/*,video/*" style="display: none;" onchange="mostrarPreview(this)">
-                    
-                    <button type="button" class="btn-icon" onclick="document.getElementById('fotoInput').click()" 
-                            style="background: none; border: none; font-size: 24px; cursor: pointer;">📸</button>
-                    
-                    <button id="enviarBtn" disabled 
-                            style="background: #8b0000; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer;">
-                        Publicar
-                    </button>
+                    <button type="button" onclick="document.getElementById('fotoInput').click()" style="background:none; border:none; font-size:24px; cursor:pointer;">📸</button>
+                    <button id="enviarBtn" disabled>Publicar</button>
                 </div>
             </section>
 
             <section id="secretos-container">
-                <div style="padding: 40px; text-align: center; color: #71767b;">
-                    Sincronizando con la red...
-                </div>
+                <div style="padding: 40px; text-align: center; color: #71767b;">Cargando red...</div>
             </section>
         </main>
     </div>
