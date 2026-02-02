@@ -92,41 +92,37 @@ textarea {
 }
 
 /* Botón Publicar Fix */
+/* --- BOTÓN PUBLICAR: SIN COLOR Y SIN BUGS --- */
 #enviarBtn {
-    background: linear-gradient(135deg, var(--accent-red), #800000) !important;
-    color: white !important;
-    border: none !important;
-    padding: 10px 24px !important;
+    background: none !important; /* Cero color de fondo */
+    color: var(--text-main) !important; /* Solo el texto */
+    border: 1px solid var(--border-color) !important; /* Borde simple */
+    padding: 8px 20px !important;
     border-radius: 12px !important;
-    font-weight: 800 !important;
+    font-weight: 700 !important;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
     cursor: pointer;
-    /* Quitamos transform y top de la transición */
-    transition: background 0.2s, filter 0.2s, box-shadow 0.2s; 
-    position: relative;
-    transform: none !important; /* Forzamos que no se mueva */
-    top: 0 !important;
-}
-
-#enviarBtn:hover:not(:disabled) {
-    /* Mantenemos el brillo y la sombra, pero SIN moverse un solo píxel */
-    filter: brightness(1.1);
-    box-shadow: 0 0 15px var(--accent-glow);
-}
-
-#enviarBtn:active:not(:disabled) {
-    /* Solo un cambio visual de brillo al clickear, nada de escalas */
-    filter: brightness(0.8);
-}
-
-#enviarBtn:disabled {
-    background: #161b22 !important;
-    color: var(--text-dim) !important;
-    cursor: not-allowed !important;
-    opacity: 0.5;
+    
+    /* MATAMOS CUALQUIER ANIMACIÓN O MOVIMIENTO */
+    transition: none !important; 
+    transform: none !important;
+    position: static !important;
     box-shadow: none !important;
-    filter: none !important;
+}
+
+/* Solo un cambio de borde al pasar el mouse, nada de saltos */
+#enviarBtn:hover:not(:disabled) {
+    border-color: var(--text-main) !important;
+    background: rgba(255, 255, 255, 0.05) !important; /* Un brillo casi invisible */
+}
+
+/* Estado Desactivado: Opaco y sin interactividad */
+#enviarBtn:disabled {
+    color: var(--text-dim) !important;
+    border-color: var(--border-color) !important;
+    opacity: 0.4;
+    cursor: not-allowed !important;
+    pointer-events: none !important; /* Esto evita que el mouse lo detecte siquiera */
 }
 /* --- FEED & CARDS --- */
 .post-group { border-bottom: 1px solid var(--border-color); animation: fadeIn 0.4s ease-out; }
