@@ -1,4 +1,4 @@
-/* --- VARIABLES --- */
+/* --- VARIABLES  VUELVE A LA PAGINA QUE HACES AQUI, METICHE--- */
 :root {
     --bg-color: #000000;
     --border-color: #2f3336;
@@ -6,7 +6,6 @@
     --text-dim: #71767b;
     --accent-red: #8b0000;
     --accent-hover: #b30000;
-    --card-bg: #000000;
     --nav-bg: rgba(0, 0, 0, 0.85);
     --success: #00ba7c;
     --reply-line: #333639;
@@ -16,7 +15,7 @@
 html, body {
     background-color: var(--bg-color);
     color: var(--text-main);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     margin: 0; padding: 0; width: 100%; overflow-x: hidden;
 }
 
@@ -26,95 +25,71 @@ header {
     text-align: center; background: var(--nav-bg);
     backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 10000;
 }
-header h1 { font-size: 24px; margin: 0; letter-spacing: -0.5px; font-weight: 900; }
+header h1 { font-size: 24px; margin: 0; font-weight: 900; letter-spacing: -0.5px; }
 header h1 .barbaro { color: var(--accent-red); }
 
-/* --- LAYOUT ANCHO --- */
-.layout-container { display: flex; justify-content: center; width: 100%; margin: 0 auto; }
+/* --- LAYOUT ANCHO (850px) --- */
+.layout-container { display: flex; justify-content: center; width: 100%; }
 main { 
     width: 100%; 
-    max-width: 850px; /* Ancho ajustado a tu petición */
+    max-width: 850px; 
     border-left: 1px solid var(--border-color); 
     border-right: 1px solid var(--border-color); 
-    min-height: 100vh; 
-    background-color: var(--bg-color); 
+    min-height: 100vh;
 }
 
 /* --- NAVEGACIÓN --- */
 .comunidades-nav { display: flex; gap: 12px; padding: 12px 15px; border-bottom: 1px solid var(--border-color); overflow-x: auto; scrollbar-width: none; }
-.tab-btn { background: #161b22; color: var(--text-dim); border: 1px solid var(--border-color); padding: 8px 18px; border-radius: 20px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+.tab-btn { background: #161b22; color: var(--text-dim); border: 1px solid var(--border-color); padding: 8px 18px; border-radius: 20px; cursor: pointer; font-weight: 700; transition: 0.2s; white-space: nowrap; }
 .tab-btn.active { background: var(--accent-red); color: white; border-color: transparent; }
 
 /* --- FORMULARIO --- */
-#form-area { padding: 15px 25px; border-bottom: 8px solid #161b22; position: relative; }
+#form-area { padding: 15px 25px; border-bottom: 8px solid #161b22; }
 textarea { width: 100%; background: transparent; border: none; color: var(--text-main); font-size: 19px; resize: none; outline: none; min-height: 100px; }
-.cancelar-text { color: var(--accent-red); cursor: pointer; font-size: 13px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
 
 /* --- FEED & MULTIMEDIA BLINDADO --- */
-.post-group { border-bottom: 1px solid var(--border-color); transition: background 0.2s ease; position: relative; }
-.post-group:hover { background-color: rgba(255, 255, 255, 0.02); }
-
-.card { padding: 15px 25px; display: flex; flex-direction: column; position: relative; }
-.card p { font-size: 16px; line-height: 1.5; margin: 0; white-space: pre-wrap; word-wrap: break-word; }
+.post-group { border-bottom: 1px solid var(--border-color); position: relative; }
+.card { padding: 15px 25px; display: flex; flex-direction: column; }
 
 .card-img, .card-img-reply { 
-    width: 100%; 
-    max-height: 550px; 
-    object-fit: contain; 
-    border-radius: 16px; 
-    border: 1px solid var(--border-color); 
-    margin: 12px 0 20px 0; 
-    background: #000; 
-    display: block;
-    position: relative;
-    z-index: 1;
+    width: 100%; max-height: 550px; object-fit: contain; 
+    border-radius: 16px; border: 1px solid var(--border-color); 
+    margin: 12px 0 20px 0; background: #000; display: block;
 }
 
-/* ÁREA DE BOTONES (FIX PARA VIDEOS) */
+/* FOOTER FIX (Para que el click funcione sobre videos) */
 .footer-card { 
-    display: flex !important; 
-    justify-content: flex-start; 
-    gap: 20px;
-    align-items: center; 
-    position: relative !important;
-    z-index: 999 !important; 
-    padding: 10px 0;
-    background: var(--bg-color);
-    pointer-events: auto !important;
+    display: flex !important; gap: 20px; align-items: center; 
+    position: relative !important; z-index: 999 !important; 
+    padding: 10px 0; background: var(--bg-color); pointer-events: auto !important;
 }
 
 .like-btn, .reply-btn { 
-    background: #161b22; /* Fondo sólido para visibilidad */
-    border: 1px solid var(--border-color);
-    color: var(--text-main) !important; 
-    cursor: pointer !important; 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    font-size: 14px; 
-    font-weight: 600;
-    transition: 0.2s;
-    padding: 8px 16px;
-    border-radius: 20px;
+    background: #161b22; border: 1px solid var(--border-color);
+    color: var(--text-main) !important; cursor: pointer !important;
+    display: flex; align-items: center; gap: 8px; font-size: 14px; 
+    font-weight: 600; padding: 8px 16px; border-radius: 20px; transition: 0.2s;
 }
 
 .reply-btn:hover { background: var(--accent-red) !important; color: white !important; }
-.like-btn:hover { color: var(--success) !important; background: rgba(0, 186, 124, 0.1); }
 
 /* --- RESPUESTAS --- */
 .reply-card { 
-    margin-left: 60px; 
-    margin-top: 5px; 
-    padding: 10px 20px; 
-    border-left: 2px solid var(--reply-line); 
-    position: relative;
+    margin-left: 60px; border-left: 2px solid var(--reply-line); 
+    padding: 10px 20px; margin-bottom: 10px;
 }
 
-/* --- MODAL & RESPONSIVE --- */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 20000; }
+/* --- MODAL (FIXED) --- */
+.modal-overlay { 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.95); display: flex; justify-content: center; 
+    align-items: center; z-index: 20000; 
+}
+.modal-content { background: #000; padding: 30px; border-radius: 24px; border: 1px solid var(--border-color); text-align: center; max-width: 400px; }
 
-@media (max-width: 750px) {
-    main { border: none; }
+/* --- RESPONSIVE --- */
+@media (max-width: 850px) {
+    main { max-width: 100%; border: none; }
     .card { padding: 15px; }
     .reply-card { margin-left: 20px; }
 }
