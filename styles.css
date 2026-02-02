@@ -58,8 +58,12 @@ main {
 }
 .tab-btn.active { background: var(--accent-red); color: white; border-color: transparent; }
 
-/* --- FORMULARIO & ACCIÓN --- */
-#form-area { padding: 20px; border-bottom: 8px solid #161b22; }
+/* --- FORMULARIO & ACCIÓN (EL ARREGLO) --- */
+#form-area { 
+    padding: 20px; 
+    border-bottom: 8px solid #161b22; 
+    isolation: isolate; 
+}
 textarea { 
     width: 100%; background: transparent; border: none; 
     color: var(--text-main); font-size: 18px; resize: none; 
@@ -68,50 +72,52 @@ textarea {
 
 .form-footer { 
     display: flex; align-items: center; justify-content: space-between; 
-    padding-top: 15px; gap: 15px;
+    padding-top: 15px; gap: 15px; position: relative;
 }
 
-/* Botón Cámara */
-.form-footer button[type="button"] {
+/* Botón Cámara Fix */
+.btn-camera {
     background: rgba(255, 255, 255, 0.05) !important;
     border: 1px solid var(--border-color) !important;
     border-radius: 50% !important;
     width: 45px !important; height: 45px !important;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s ease-in-out; outline: none;
+    font-size: 20px !important; transition: all 0.2s ease-in-out; 
+    padding: 0 !important; margin: 0 !important;
 }
-.form-footer button[type="button"]:hover {
+.btn-camera:hover {
     background: rgba(211, 47, 47, 0.1) !important;
     border-color: var(--accent-red) !important;
     transform: scale(1.05); box-shadow: 0 0 12px var(--accent-glow);
 }
 
-/* Botón Publicar */
+/* Botón Publicar Fix */
 #enviarBtn {
     background: linear-gradient(135deg, var(--accent-red), #800000) !important;
     color: white !important; border: none !important;
     padding: 10px 24px !important; border-radius: 12px !important;
     font-weight: 800 !important; text-transform: uppercase;
     letter-spacing: 0.5px; cursor: pointer;
-    transition: all 0.2s ease-in-out; position: relative; top: 0;
+    transition: all 0.2s ease-in-out; position: relative;
 }
 #enviarBtn:hover:not(:disabled) {
-    top: -2px; box-shadow: 0 4px 15px var(--accent-glow); filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px var(--accent-glow);
+    filter: brightness(1.1);
 }
-#enviarBtn:active:not(:disabled) { top: 0; transform: scale(0.98); }
+#enviarBtn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
 #enviarBtn:disabled {
     background: #161b22 !important; color: var(--text-dim) !important;
-    cursor: not-allowed !important; opacity: 0.5; transform: none !important;
-    top: 0 !important; box-shadow: none !important;
+    cursor: not-allowed !important; opacity: 0.5;
+    transform: none !important; box-shadow: none !important;
+    pointer-events: none; /* Mata el hover fantasma */
 }
 
 /* --- FEED & CARDS --- */
 .post-group { border-bottom: 1px solid var(--border-color); animation: fadeIn 0.4s ease-out; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-.card, .reply-card { 
-    padding: 20px; width: 100%; box-sizing: border-box; word-wrap: break-word; 
-}
+.card, .reply-card { padding: 20px; width: 100%; box-sizing: border-box; word-wrap: break-word; }
 
 .card-img { 
     width: 100% !important; height: auto !important; max-height: 75vh; 
