@@ -27,7 +27,6 @@ function mostrarPreview(inputElement) {
     const file = inputElement.files[0];
 
     if (file) {
-        // Validación de 15MB
         if (file.size > 15 * 1024 * 1024) {
             alert("¡Broski, el archivo es muy pesado! Máximo 15MB.");
             inputElement.value = "";
@@ -91,10 +90,11 @@ function escaparHTML(str) {
 }
 
 async function leerSecretos() {
+    // CAMBIO: Ordenamos por ultima_actividad para el sistema de Bumping
     const { data, error } = await _supabase.from('secretos')
         .select('*')
         .eq('categoria', comunidadActual)
-        .order('created_at', { ascending: false });
+        .order('ultima_actividad', { ascending: false });
 
     if (error || !data) return;
 
@@ -121,8 +121,15 @@ async function leerSecretos() {
                 ${susRespuestas.map(r => `
                     <div class="reply-card">
                         <div class="card" style="padding:15px 20px;">
-                            <span class="post-id" style="color:var(--text-dim); font-size:11px;" onclick="citarPost(${r.id})">#${r.id}</span>
-                            <p style="font-size:15px;">${escaparHTML(r.contenido).replace(/>>(\d+)/g, '<span style="color:var(--accent-red); font-weight:bold;">>>$1</span>')}</p>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <span class="post-id" style="color:var(--text-dim); font-size:11px;" onclick="citarPost(${r.id})">#${r.id}</span>
+                                <span style="color:var(--accent-red); font-size:10px; font-weight:bold; text-transform:uppercase;">
+                                    >> Respondiendo a #${r.padre_id}
+                                </span>
+                            </div>
+                            <p style="font-size:15px;">
+                                ${escaparHTML(r.contenido).replace(/>>(\d+)/g, '<span style="color:var(--accent-red); font-weight:bold;">>>$1</span>')}
+                            </p>
                             ${renderMedia(r.imagen_url)}
                             <div class="footer-card" style="border:none; padding:0; margin-top:10px;">
                                 <button class="reply-btn" style="padding:5px 12px; font-size:11px;" onclick="prepararRespuesta(${s.id})">💬</button>
@@ -175,12 +182,11 @@ btnEnviar.onclick = async () => {
 
         if (insertError) throw insertError;
 
-        // Limpiar todo
         input.value = "";
         cancelarPreview();
         cancelarRespuesta();
         if (window.turnstile) turnstile.reset();
-        tokenCaptcha = null; // Resetear token tras uso
+        tokenCaptcha = null;
         btnEnviar.disabled = true;
         leerSecretos();
     } catch (err) {
