@@ -11,71 +11,21 @@ let comunidadActual = 'general';
 let respondiendoA = null;
 let tokenCaptcha = null;
 
-// --- SEGURIDAD CAPTCHA ---
+// --- CAPTCHA ---
 function captchaResuelto(token) { tokenCaptcha = token; btn.disabled = false; }
 function captchaExpirado() { tokenCaptcha = null; btn.disabled = true; }
 
-function citarPost(id) {
-    input.value += (input.value ? '\n' : '') + `>>${id} `;
-    input.focus();
-    if (!respondiendoA) prepararRespuesta(id);
-}
-
-// --- POLÍTICAS ---
-const modal = document.getElementById('modal-politicas');
-if (localStorage.getItem('politicasAceptadas')) modal.style.display = 'none';
-document.getElementById('btn-aceptar').onclick = () => {
-    localStorage.setItem('politicasAceptadas', 'true');
-    modal.style.display = 'none';
-};
-
+// --- FUNCIONES DE APOYO ---
 function escaparHTML(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 }
 
-// --- PREVIEW MEJORADO (FOTOS Y VIDEOS) ---
-function mostrarPreview(input) {
-    const containerPreview = document.getElementById('preview-container');
-    const file = input.files[0];
-    
-    if (file) {
-        // VALIDACIÓN DE PESO: 15MB
-        const limiteMB = 15 * 1024 * 1024;
-        if (file.size > limiteMB) {
-            alert("Broski, ese archivo pesa demasiado. El límite son 15MB.");
-            cancelarFoto();
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => { 
-            // Limpiamos y detectamos tipo
-            containerPreview.innerHTML = '<span onclick="cancelarFoto()" class="cancelar-preview">✕</span>';
-            
-            if (file.type.startsWith('video/')) {
-                containerPreview.innerHTML += `<video src="${e.target.result}" id="img-preview" autoplay muted loop style="width:100%; border-radius:12px;"></video>`;
-            } else {
-                containerPreview.innerHTML += `<img src="${e.target.result}" id="img-preview" style="width:100%; border-radius:12px;">`;
-            }
-            containerPreview.style.display = 'block'; 
-        }
-        reader.readAsDataURL(file);
-    }
-}
-
-function cancelarFoto() { 
-    fotoInput.value = ""; 
-    document.getElementById('preview-container').style.display = 'none'; 
-    document.getElementById('preview-container').innerHTML = '';
-}
-
-function cambiarComunidad(c) {
-    comunidadActual = c;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    if (event) event.target.classList.add('active');
-    leerSecretos();
+function citarPost(id) {
+    input.value += (input.value ? '\n' : '') + `>>${id} `;
+    input.focus();
+    if (!respondiendoA) prepararRespuesta(id);
 }
 
 function prepararRespuesta(id) {
@@ -97,16 +47,7 @@ function prepararRespuesta(id) {
     }
 }
 
-async function reaccionar(id) {
-    if (localStorage.getItem(`voto_${id}`)) return;
-    const { error } = await _supabase.rpc('incrementar_reaccion', { row_id: id, columna_nombre: 'likes' });
-    if (!error) { 
-        localStorage.setItem(`voto_${id}`, 'true'); 
-        leerSecretos(); 
-    }
-}
-
-// --- RENDERIZADO CON SOPORTE VIDEO ---
+// --- RENDERING ---
 async function leerSecretos() {
     const { data, error } = await _supabase
         .from('secretos')
@@ -124,9 +65,11 @@ async function leerSecretos() {
         
         const renderMedia = (url, isReply) => {
             if(!url) return '';
-            const isVideo = url.match(/\.(mp4|webm|ogg)/i);
+            const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov)/i);
             const clase = isReply ? 'card-img-reply' : 'card-img';
-            return isVideo ? `<video src="${url}" controls class="${clase}"></video>` : `<img src="${url}" class="${clase}">`;
+            return isVideo ? 
+                `<video src="${url}" controls playsinline class="${clase}"></video>` : 
+                `<img src="${url}" class="${clase}" loading="lazy">`;
         };
 
         const rHtml = susRespuestas.map(r => `
@@ -137,7 +80,9 @@ async function leerSecretos() {
                 </div>
                 <p>${escaparHTML(r.contenido).replace(/&gt;&gt;(\d+)/g, '<span class="mention">>>$1</span>')}</p>
                 ${renderMedia(r.imagen_url, true)}
-                <button class="like-btn" onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
+                <div class="footer-card">
+                    <button class="like-btn" onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
+                </div>
             </div>
         `).join('');
 
@@ -160,7 +105,16 @@ async function leerSecretos() {
     }).join('');
 }
 
-// --- ENVÍO CON SOPORTE MULTIMEDIA ---
+// --- ACCIONES ---
+async function reaccionar(id) {
+    if (localStorage.getItem(`voto_${id}`)) return;
+    const { error } = await _supabase.rpc('incrementar_reaccion', { row_id: id, columna_nombre: 'likes' });
+    if (!error) { 
+        localStorage.setItem(`voto_${id}`, 'true'); 
+        leerSecretos(); 
+    }
+}
+
 btn.onclick = async () => {
     if (!tokenCaptcha) { alert("Resuelve el captcha primero."); return; }
     const texto = input.value.trim();
@@ -174,14 +128,9 @@ btn.onclick = async () => {
     try {
         if (file) {
             const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${fileExt}`;
-
-            const { error: uploadError } = await _supabase.storage
-                .from('imagenes')
-                .upload(fileName, file);
-
+            const fileName = `${Date.now()}.${fileExt}`;
+            const { error: uploadError } = await _supabase.storage.from('imagenes').upload(fileName, file);
             if (uploadError) throw uploadError;
-
             const { data } = _supabase.storage.from('imagenes').getPublicUrl(fileName);
             urlFoto = data.publicUrl;
         }
@@ -195,22 +144,17 @@ btn.onclick = async () => {
         }]);
 
         if (insertError) throw insertError;
-
+        
         input.value = "";
-        cancelarFoto();
+        fotoInput.value = "";
+        document.getElementById('preview-container').style.display = 'none';
         respondiendoA = null;
-        tokenCaptcha = null;
-        if(window.turnstile) turnstile.reset();
-        if(document.getElementById('btn-cancelar')) document.getElementById('btn-cancelar').remove();
-        input.placeholder = "¿Qué está pasando?";
         leerSecretos();
-
     } catch (err) {
-        console.error("Error:", err);
         alert("Fallo al publicar: " + err.message);
     } finally {
-        btn.innerText = "Publicar";
         btn.disabled = false;
+        btn.innerText = "Publicar";
     }
 };
 
