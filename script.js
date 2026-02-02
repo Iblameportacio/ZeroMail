@@ -7,6 +7,7 @@ const btnEnviar = document.getElementById('enviarBtn');
 const container = document.getElementById('secretos-container');
 const replyIndicator = document.getElementById('reply-indicator');
 const fotoInput = document.getElementById('fotoInput');
+const previewContainer = document.getElementById('preview-container');
 
 let comunidadActual = 'general';
 let respondiendoA = null;
@@ -20,10 +21,44 @@ document.getElementById('btn-aceptar').onclick = () => {
     modal.style.display = 'none';
 };
 
+// --- PREVIEW DE MEDIA (FOTO/VIDEO) ---
+function mostrarPreview(inputElement) {
+    previewContainer.innerHTML = "";
+    const file = inputElement.files[0];
+
+    if (file) {
+        // Validación de 15MB
+        if (file.size > 15 * 1024 * 1024) {
+            alert("¡Broski, el archivo es muy pesado! Máximo 15MB.");
+            inputElement.value = "";
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewContainer.style.display = "block";
+            const isVideo = file.type.startsWith('video/');
+            
+            previewContainer.innerHTML = isVideo 
+                ? `<video src="${e.target.result}" controls style="max-width:100%; border-radius:12px;"></video>`
+                : `<img src="${e.target.result}" style="max-width:100%; border-radius:12px;">`;
+            
+            previewContainer.innerHTML += `<b onclick="cancelarPreview()" style="position:absolute; top:10px; right:10px; cursor:pointer; background:rgba(0,0,0,0.8); color:white; padding:5px 10px; border-radius:50%;">✕</b>`;
+        }
+        reader.readAsDataURL(file);
+    }
+}
+
+function cancelarPreview() {
+    previewContainer.style.display = "none";
+    previewContainer.innerHTML = "";
+    fotoInput.value = "";
+}
+
 // --- LÓGICA DE RESPUESTAS ---
 function prepararRespuesta(id) {
     respondiendoA = id;
-    replyIndicator.innerHTML = `<span class="cancelar-text" onclick="cancelarRespuesta()" style="color: #8b0000; cursor:pointer; font-weight:bold;">[Respondiendo a No.${id} ✖]</span>`;
+    replyIndicator.innerHTML = `<span onclick="cancelarRespuesta()" style="color:var(--accent-red); cursor:pointer; font-weight:bold;">[Respondiendo a No.${id} ✖]</span>`;
     input.placeholder = "Escribe tu respuesta...";
     input.focus();
     window.scrollTo({ top: document.getElementById('form-area').offsetTop - 100, behavior: 'smooth' });
@@ -44,7 +79,6 @@ function citarPost(id) {
 function renderMedia(url) {
     if(!url) return '';
     const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov)/i);
-    // Añadimos la clase card-img que ahora es 100% responsiva en CSS
     return isVideo ? 
         `<video src="${url}" controls preload="metadata" playsinline class="card-img"></video>` : 
         `<img src="${url}" class="card-img" loading="lazy">`;
@@ -101,7 +135,7 @@ async function leerSecretos() {
     }).join('');
 }
 
-// --- ACCIONES (LIKE Y ENVÍO) ---
+// --- ACCIONES ---
 async function reaccionar(id) {
     if (localStorage.getItem(`voto_${id}`)) return;
     const { error } = await _supabase.rpc('incrementar_reaccion', { row_id: id, columna_nombre: 'likes' });
@@ -141,17 +175,18 @@ btnEnviar.onclick = async () => {
 
         if (insertError) throw insertError;
 
-        // Limpiar
+        // Limpiar todo
         input.value = "";
-        fotoInput.value = "";
-        if (window.turnstile) turnstile.reset();
+        cancelarPreview();
         cancelarRespuesta();
+        if (window.turnstile) turnstile.reset();
+        tokenCaptcha = null; // Resetear token tras uso
+        btnEnviar.disabled = true;
         leerSecretos();
     } catch (err) {
         alert("Error: " + err.message);
     } finally {
         btnEnviar.innerText = "Publicar";
-        btnEnviar.disabled = false;
     }
 };
 
@@ -163,8 +198,7 @@ function cambiarComunidad(c) {
 
 function captchaResuelto(token) { 
     tokenCaptcha = token; 
-    btnEnviar.disabled = false;
-    btnEnviar.style.pointerEvents = "auto"; // Rehabilitamos eventos de puntero
+    btnEnviar.disabled = false; 
 }
 function captchaExpirado() { tokenCaptcha = null; btnEnviar.disabled = true; }
 
