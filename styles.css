@@ -1,4 +1,4 @@
-/* --- QUE BUSCAS EN EL CODIGO, METICHE --- */
+/* --- VARIABLES --- */
 :root {
     --bg-color: #000000;
     --border-color: #2f3336;
@@ -28,13 +28,12 @@ header {
 }
 header h1 { font-size: 24px; margin: 0; letter-spacing: -0.5px; font-weight: 900; }
 header h1 .barbaro { color: var(--accent-red); }
-.warning { color: var(--text-dim); font-size: 11px; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
 
-/* --- LAYOUT --- */
+/* --- LAYOUT ANCHO --- */
 .layout-container { display: flex; justify-content: center; width: 100%; margin: 0 auto; }
 main { 
     width: 100%; 
-    max-width: 850px; 
+    max-width: 850px; /* Ancho ajustado a tu petición */
     border-left: 1px solid var(--border-color); 
     border-right: 1px solid var(--border-color); 
     min-height: 100vh; 
@@ -49,45 +48,45 @@ main {
 /* --- FORMULARIO --- */
 #form-area { padding: 15px 25px; border-bottom: 8px solid #161b22; position: relative; }
 textarea { width: 100%; background: transparent; border: none; color: var(--text-main); font-size: 19px; resize: none; outline: none; min-height: 100px; }
+.cancelar-text { color: var(--accent-red); cursor: pointer; font-size: 13px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
 
-/* --- FEED & MULTIMEDIA (THE FIX) --- */
+/* --- FEED & MULTIMEDIA BLINDADO --- */
 .post-group { border-bottom: 1px solid var(--border-color); transition: background 0.2s ease; position: relative; }
 .post-group:hover { background-color: rgba(255, 255, 255, 0.02); }
 
 .card { padding: 15px 25px; display: flex; flex-direction: column; position: relative; }
 .card p { font-size: 16px; line-height: 1.5; margin: 0; white-space: pre-wrap; word-wrap: break-word; }
 
-/* Multimedia con z-index bajo */
 .card-img, .card-img-reply { 
     width: 100%; 
     max-height: 550px; 
     object-fit: contain; 
     border-radius: 16px; 
     border: 1px solid var(--border-color); 
-    margin: 12px 0 20px 0; /* Más margen abajo para no tapar el botón */
+    margin: 12px 0 20px 0; 
     background: #000; 
     display: block;
     position: relative;
     z-index: 1;
 }
 
-/* FOOTER CARD - ANTI-BLOQUEO */
+/* ÁREA DE BOTONES (FIX PARA VIDEOS) */
 .footer-card { 
     display: flex !important; 
     justify-content: flex-start; 
-    gap: 25px;
+    gap: 20px;
     align-items: center; 
     position: relative !important;
-    z-index: 9999 !important; /* Por encima de todo el video */
+    z-index: 999 !important; 
     padding: 10px 0;
-    background: var(--bg-color); /* Fondo sólido para anular la transparencia del video */
-    pointer-events: auto !important; /* Fuerza la captura del click */
+    background: var(--bg-color);
+    pointer-events: auto !important;
 }
 
 .like-btn, .reply-btn { 
-    background: transparent; 
-    border: none; 
-    color: var(--text-dim) !important; 
+    background: #161b22; /* Fondo sólido para visibilidad */
+    border: 1px solid var(--border-color);
+    color: var(--text-main) !important; 
     cursor: pointer !important; 
     display: flex; 
     align-items: center; 
@@ -95,11 +94,11 @@ textarea { width: 100%; background: transparent; border: none; color: var(--text
     font-size: 14px; 
     font-weight: 600;
     transition: 0.2s;
-    padding: 8px 12px;
+    padding: 8px 16px;
     border-radius: 20px;
 }
 
-.reply-btn:hover { color: var(--accent-red) !important; background: rgba(139, 0, 0, 0.1); }
+.reply-btn:hover { background: var(--accent-red) !important; color: white !important; }
 .like-btn:hover { color: var(--success) !important; background: rgba(0, 186, 124, 0.1); }
 
 /* --- RESPUESTAS --- */
@@ -109,13 +108,11 @@ textarea { width: 100%; background: transparent; border: none; color: var(--text
     padding: 10px 20px; 
     border-left: 2px solid var(--reply-line); 
     position: relative;
-    z-index: 5;
 }
 
-/* --- MODAL --- */
+/* --- MODAL & RESPONSIVE --- */
 .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 20000; }
 
-/* --- RESPONSIVE --- */
 @media (max-width: 750px) {
     main { border: none; }
     .card { padding: 15px; }
