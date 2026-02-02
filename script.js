@@ -160,7 +160,11 @@ function cambiarComunidad(c) {
     leerSecretos();
 }
 
-function captchaResuelto(token) { tokenCaptcha = token; btnEnviar.disabled = false; }
+function captchaResuelto(token) { 
+    tokenCaptcha = token; 
+    btnEnviar.disabled = false;
+    btnEnviar.style.pointerEvents = "auto"; // Rehabilitamos eventos de puntero
+}
 function captchaExpirado() { tokenCaptcha = null; btnEnviar.disabled = true; }
 
 leerSecretos();
