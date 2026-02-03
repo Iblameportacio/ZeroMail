@@ -7,6 +7,7 @@ let tokenCaptcha = null;
 let comunidadActual = 'general';
 let filtroTop = false;
 let respondiendoA = null;
+let procesandoLike = false; // Bloqueo anti-spam
 
 const input = document.getElementById('secretoInput');
 const btnEnviar = document.getElementById('enviarBtn');
@@ -17,12 +18,11 @@ const previewContainer = document.getElementById('preview-container');
 
 // --- 1. INICIALIZACIÓN ---
 async function inicializar() {
-    // Solo cargamos secretos al iniciar
     leerSecretos();
 }
 inicializar();
 
-// --- 2. MODAL Y TABS (SOLO TOP E INICIO) ---
+// --- 2. NAVEGACIÓN (INICIO / TOP) ---
 const modal = document.getElementById('modal-politicas');
 if (localStorage.getItem('politicasAceptadas')) modal.style.display = 'none';
 
@@ -31,17 +31,17 @@ document.getElementById('btn-aceptar').onclick = () => {
     modal.style.display = 'none';
 };
 
-function verTop() { 
+window.verTop = function() { 
     filtroTop = true; 
     actualizarTabs('top'); 
     leerSecretos(); 
-}
+};
 
-function verInicio() {
+window.verInicio = function() {
     filtroTop = false;
     actualizarTabs('inicio');
     leerSecretos();
-}
+};
 
 function actualizarTabs(tipo) {
     document.querySelectorAll('.tab-btn').forEach(b => {
@@ -50,7 +50,7 @@ function actualizarTabs(tipo) {
     });
 }
 
-// --- 3. MULTIMEDIA (FOTOS Y VIDEOS) ---
+// --- 3. MULTIMEDIA ---
 function renderMedia(url, nsfw) {
     if(!url) return '';
     const blur = nsfw ? 'media-censurada' : '';
@@ -67,15 +67,11 @@ function renderMedia(url, nsfw) {
     return html + `</div>`;
 }
 
-// --- 4. LEER POSTS (HILOS ARREGLADOS) ---
+// --- 4. LEER POSTS ---
 async function leerSecretos() {
     let q = _supabase.from('secretos').select('*');
-    
-    if (filtroTop) {
-        q = q.order('likes', { ascending: false });
-    } else {
-        q = q.eq('categoria', comunidadActual).order('ultima_actividad', { ascending: false });
-    }
+    if (filtroTop) q = q.order('likes', { ascending: false });
+    else q = q.eq('categoria', comunidadActual).order('ultima_actividad', { ascending: false });
 
     const { data } = await q;
     if (!data) return;
@@ -84,6 +80,7 @@ async function leerSecretos() {
     
     container.innerHTML = hilos.map(s => {
         const susResp = data.filter(r => r.padre_id === s.id).sort((a,b) => a.id - b.id);
+        const yaTieneLike = localStorage.getItem('v_' + s.id) ? 'style="color:#ff4500"' : '';
         
         return `<div class="post-group">
             <div class="card">
@@ -92,24 +89,50 @@ async function leerSecretos() {
                 ${renderMedia(s.imagen_url, s.es_nsfw)}
                 <div class="footer-card">
                     <button class="reply-btn" onclick="prepararRespuesta(${s.id})">💬</button>
-                    <button class="like-btn" onclick="reaccionar(${s.id})">🔥 ${s.likes || 0}</button>
+                    <button class="like-btn" ${yaTieneLike} onclick="reaccionar(${s.id})">🔥 ${s.likes || 0}</button>
                 </div>
             </div>
-            ${susResp.map(r => `<div class="reply-card" style="margin-left:30px; border-left:2px solid red; padding:10px; background:#111; margin-bottom:5px;">
-                <span style="color:red; font-size:11px;">#${r.id} >> #${r.padre_id}</span>
-                <p>${escaparHTML(r.contenido)}</p>
-                ${renderMedia(r.imagen_url, r.es_nsfw)}
-                <button class="like-btn" onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
-            </div>`).join('')}
+            ${susResp.map(r => {
+                const yaLikeR = localStorage.getItem('v_' + r.id) ? 'style="color:#ff4500"' : '';
+                return `<div class="reply-card" style="margin-left:30px; border-left:2px solid red; padding:10px; background:#111; margin-bottom:5px;">
+                    <span style="color:red; font-size:11px;">#${r.id} >> #${r.padre_id}</span>
+                    <p>${escaparHTML(r.contenido)}</p>
+                    ${renderMedia(r.imagen_url, r.es_nsfw)}
+                    <button class="like-btn" ${yaLikeR} onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
+                </div>`}).join('')}
         </div>`;
     }).join('');
 }
 
-// --- 5. PUBLICAR Y REACCIONES ---
+// --- 5. REACCIONES (CON BLOQUEO ANTI-SPAM) ---
+async function reaccionar(id) {
+    if (procesandoLike) return; // Evita el spam de clics
+    
+    procesandoLike = true;
+    const yaLike = localStorage.getItem('v_' + id);
+    const rpc = yaLike ? 'decrementar_reaccion' : 'incrementar_reaccion';
+    const incremento = yaLike ? -1 : 1;
+
+    // UI Optimista
+    const btns = document.querySelectorAll(`button[onclick="reaccionar(${id})"]`);
+    btns.forEach(b => {
+        let n = parseInt(b.innerText.replace('🔥 ', '')) || 0;
+        b.innerHTML = `🔥 ${Math.max(0, n + incremento)}`;
+        b.style.color = yaLike ? "" : "#ff4500";
+    });
+
+    try {
+        await _supabase.rpc(rpc, { row_id: id, columna_nombre: 'likes' });
+        if(yaLike) localStorage.removeItem('v_'+id); 
+        else localStorage.setItem('v_'+id, '1');
+    } catch(e) { console.error("Error like"); }
+    finally { procesandoLike = false; }
+}
+
+// --- 6. PUBLICAR ---
 btnEnviar.onclick = async () => {
     if (!tokenCaptcha) return alert("Resuelve el captcha");
     btnEnviar.disabled = true;
-    
     try {
         let url = null;
         if (fotoInput.files[0]) {
@@ -118,31 +141,16 @@ btnEnviar.onclick = async () => {
             await _supabase.storage.from('imagenes').upload(n, f);
             url = _supabase.storage.from('imagenes').getPublicUrl(n).data.publicUrl;
         }
-
         await _supabase.from('secretos').insert([{ 
-            contenido: input.value, 
-            categoria: comunidadActual, 
-            padre_id: respondiendoA, 
-            imagen_url: url 
+            contenido: input.value, categoria: comunidadActual, padre_id: respondiendoA, imagen_url: url 
         }]);
-
-        input.value = ""; 
-        cancelarRespuesta();
+        input.value = ""; cancelarRespuesta();
         if(window.turnstile) turnstile.reset();
         tokenCaptcha = null;
         leerSecretos();
     } catch(e) { alert("Error al publicar"); }
     finally { btnEnviar.disabled = false; }
 };
-
-async function reaccionar(id) {
-    const yaLike = localStorage.getItem('v_'+id);
-    const rpc = yaLike ? 'decrementar_reaccion' : 'incrementar_reaccion';
-    
-    if(yaLike) localStorage.removeItem('v_'+id); else localStorage.setItem('v_'+id, '1');
-    await _supabase.rpc(rpc, { row_id: id, columna_nombre: 'likes' });
-    leerSecretos();
-}
 
 // --- UTILIDADES ---
 function citarPost(id) { input.value += `>>${id} `; prepararRespuesta(id); }
