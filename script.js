@@ -29,12 +29,12 @@ async function inicializar() {
         if (typeof nsfwjs !== 'undefined') {
             modeloNSFW = await nsfwjs.load();
         }
-    } catch (e) { console.error("IA Error:", e); }
+    } catch (e) { console.error("IA en espera..."); }
     leerSecretos();
 }
 inicializar();
 
-// --- 2. GESTIÓN DE CONTENIDO (FOTOS/VIDEOS) ---
+// --- 2. GESTIÓN DE MULTIMEDIA ---
 function mostrarPreview(inputElement) {
     const file = inputElement.files[0];
     if (file) {
@@ -56,7 +56,7 @@ function cancelarPreview() { previewContainer.style.display = "none"; fotoInput.
 function renderMedia(url, nsfw, id) {
     if(!url) return '';
     const blur = nsfw ? 'media-censurada' : '';
-    const isVid = url.toLowerCase().match(/\.(mp4|webm|mov|ogg)/i);
+    const isVid = url.toLowerCase().match(/\.(mp4|webm|mov|ogg)/i); // Detectar videos
     let html = `<div style="position:relative; margin:10px 0;">`;
     if(nsfw) html += `<div class="nsfw-overlay" onclick="this.nextElementSibling.classList.remove('media-censurada'); this.remove()">NSFW - VER</div>`;
     
@@ -68,7 +68,7 @@ function renderMedia(url, nsfw, id) {
     return html + `</div>`;
 }
 
-// --- 3. LÓGICA DE HILOS (RESPUESTAS INFINITAS) ---
+// --- 3. LÓGICA DE HILOS Y RESPUESTAS ---
 async function leerSecretos(soloMios = false) {
     let q = _supabase.from('secretos').select('*');
     if (soloMios) q = q.eq('usuario_nombre', usuarioLogueado);
@@ -78,11 +78,9 @@ async function leerSecretos(soloMios = false) {
     const { data } = await q;
     if (!data) return;
 
-    // Filtramos los que son hilos principales (padre_id nulo)
-    const principales = data.filter(s => !s.padre_id);
+    const hilosPrincipales = data.filter(s => !s.padre_id);
     
-    container.innerHTML = principales.map(s => {
-        // Buscamos todas las respuestas que pertenezcan a este hilo
+    container.innerHTML = hilosPrincipales.map(s => {
         const susResp = data.filter(r => r.padre_id === s.id).sort((a,b) => a.id - b.id);
         const autor = s.usuario_nombre && s.usuario_nombre !== 'Anónimo' ? `@${s.usuario_nombre}` : `#${s.id}`;
         
@@ -109,59 +107,57 @@ async function leerSecretos(soloMios = false) {
     }).join('');
 }
 
-// --- 4. INTERACCIONES ---
-function citarPost(id) { input.value += `>>${id} `; prepararRespuesta(respondiendoA || id, id); }
+// --- 4. ACCIONES Y CAPTCHA ---
+function citarPost(id) { 
+    input.value += `>>${id} `; 
+    prepararRespuesta(respondiendoA || id, id); 
+}
 
 function prepararRespuesta(padreId, citandoId = null) { 
     respondiendoA = padreId; 
     const displayId = citandoId || padreId;
-    replyIndicator.innerHTML = `[Respondiendo a #${displayId} ✖]`; 
+    replyIndicator.innerHTML = `[Resp #${displayId} ✖]`; 
     input.focus(); 
 }
 
+function cancelarRespuesta() { respondiendoA = null; replyIndicator.innerHTML = ""; }
+
 btnEnviar.onclick = async () => {
-    if (!tokenCaptcha) return alert("Captcha, broski");
+    if (!tokenCaptcha) return alert("Resuelve el captcha, broski");
     const texto = input.value.trim();
     if(!texto && !fotoInput.files[0]) return;
 
     btnEnviar.disabled = true;
-    btnEnviar.innerText = "Publicando...";
+    btnEnviar.innerText = "Subiendo...";
     
     try {
         let url = null;
         if (fotoInput.files[0]) {
             const f = fotoInput.files[0];
-            const ext = f.name.split('.').pop();
-            const n = `${Date.now()}.${ext}`;
-            const { error: upError } = await _supabase.storage.from('imagenes').upload(n, f);
-            if (upError) throw upError;
+            const n = `${Date.now()}.${f.name.split('.').pop()}`;
+            await _supabase.storage.from('imagenes').upload(n, f);
             url = _supabase.storage.from('imagenes').getPublicUrl(n).data.publicUrl;
         }
 
-        const { error: insError } = await _supabase.from('secretos').insert([{ 
-            contenido: texto, 
-            categoria: comunidadActual, 
-            padre_id: respondiendoA, 
-            imagen_url: url,
-            usuario_nombre: usuarioLogueado || 'Anónimo'
+        await _supabase.from('secretos').insert([{ 
+            contenido: texto, categoria: comunidadActual, padre_id: respondiendoA, 
+            imagen_url: url, usuario_nombre: usuarioLogueado || 'Anónimo' 
         }]);
-        if (insError) throw insError;
 
         input.value = ""; cancelarPreview(); cancelarRespuesta();
         if(window.turnstile) turnstile.reset();
         tokenCaptcha = null;
         leerSecretos();
-    } catch(e) { alert("Error: " + e.message); }
+    } catch(e) { alert("Error al subir archivo"); }
     finally { btnEnviar.innerText = "Publicar"; btnEnviar.disabled = false; }
 };
 
-// --- RESTO DE FUNCIONES (LIKE, AUTH, ETC) ---
+// --- 5. LIKES Y MODALES ---
 async function reaccionar(id) {
     const yaLike = localStorage.getItem('v_'+id);
     const incremento = yaLike ? -1 : 1;
     const rpc = yaLike ? 'decrementar_reaccion' : 'incrementar_reaccion';
     
-    // UI Optimista
     const btns = document.querySelectorAll(`button[onclick="reaccionar(${id})"]`);
     btns.forEach(b => {
         let n = parseInt(b.innerText.replace('🔥 ', '')) || 0;
@@ -173,9 +169,13 @@ async function reaccionar(id) {
     await _supabase.rpc(rpc, { row_id: id, columna_nombre: 'likes' });
 }
 
-function cancelarRespuesta() { respondiendoA = null; replyIndicator.innerHTML = ""; }
-function escaparHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+document.getElementById('btn-aceptar').onclick = () => {
+    localStorage.setItem('politicasAceptadas', 'true');
+    document.getElementById('modal-politicas').style.display = 'none';
+};
+
 function captchaResuelto(t) { tokenCaptcha = t; btnEnviar.disabled = false; }
+function escaparHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function abrirCine(url) {
     const lb = document.getElementById('lightbox');
     document.getElementById('lightbox-content').innerHTML = `<img src="${url}" style="max-width:100%">`;
