@@ -1,4 +1,3 @@
-/* --- VARIABLES --- */
 :root {
     --bg-color: #050505;
     --card-bg: rgba(22, 27, 34, 0.5);
@@ -7,162 +6,52 @@
     --text-dim: #71767b;
     --accent-red: #d32f2f;
     --accent-glow: rgba(211, 47, 47, 0.3);
-    --nav-bg: rgba(5, 5, 5, 0.9);
 }
 
-/* --- BASE --- */
 html, body {
     background-color: var(--bg-color);
     color: var(--text-main);
-    font-family: 'Inter', -apple-system, sans-serif;
+    font-family: 'Inter', sans-serif;
     margin: 0; padding: 0;
-    scroll-behavior: smooth;
-    width: 100%;
     overflow-x: hidden;
 }
 
-/* --- HEADER --- */
 header {
     padding: 15px; border-bottom: 1px solid var(--border-color);
-    background: var(--nav-bg); backdrop-filter: blur(15px);
-    position: sticky; top: 0; z-index: 1000;
-}
-header h1 { 
-    font-size: 22px; font-weight: 900; 
-    text-transform: uppercase; letter-spacing: 2px; margin: 0;
-}
-header h1 .barbaro { 
-    color: var(--accent-red);
-    text-shadow: 0 0 10px var(--accent-glow);
+    background: rgba(5, 5, 5, 0.9); backdrop-filter: blur(15px);
+    position: sticky; top: 0; z-index: 1000; text-align: center;
 }
 
-/* --- LAYOUT --- */
-.layout-container { display: flex; justify-content: center; width: 100%; }
-main { 
-    width: 100%; max-width: 850px; 
-    border-left: 1px solid var(--border-color); 
-    border-right: 1px solid var(--border-color);
-    box-sizing: border-box; min-height: 100vh;
-}
+header h1 .barbaro { color: var(--accent-red); text-shadow: 0 0 10px var(--accent-glow); }
 
-/* --- NAVEGACIÓN --- */
-.comunidades-nav { 
-    display: flex; gap: 10px; padding: 12px; 
-    border-bottom: 1px solid var(--border-color); 
-    overflow-x: auto; scrollbar-width: none; 
-}
-.tab-btn { 
-    background: #161b22; color: var(--text-dim); border: 1px solid var(--border-color); 
-    padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 700; 
-    transition: 0.2s; white-space: nowrap; 
-}
+.layout-container { display: flex; justify-content: center; }
+main { width: 100%; max-width: 850px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); min-height: 100vh; }
+
+.comunidades-nav { display: flex; gap: 10px; padding: 12px; border-bottom: 1px solid var(--border-color); overflow-x: auto; scrollbar-width: none; }
+.tab-btn { background: #161b22; color: var(--text-dim); border: 1px solid var(--border-color); padding: 8px 16px; border-radius: 20px; cursor: pointer; font-weight: 700; transition: 0.2s; white-space: nowrap; }
 .tab-btn.active { background: var(--accent-red); color: white; border-color: transparent; }
 
-/* --- FORMULARIO & ACCIÓN (EL ARREGLO) --- */
-#form-area { 
-    padding: 20px; 
-    border-bottom: 8px solid #161b22; 
-    isolation: isolate; 
-}
-textarea { 
-    width: 100%; background: transparent; border: none; 
-    color: var(--text-main); font-size: 18px; resize: none; 
-    outline: none; min-height: 80px; 
-}
+#form-area { padding: 20px; border-bottom: 8px solid #161b22; }
+textarea { width: 100%; background: transparent; border: none; color: var(--text-main); font-size: 18px; resize: none; outline: none; min-height: 80px; }
 
-.form-footer { 
-    display: flex; align-items: center; justify-content: space-between; 
-    padding-top: 15px; gap: 15px; position: relative;
-}
+.btn-camera { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-size: 20px; }
+#enviarBtn { background: none; color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 20px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+#enviarBtn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Botón Cámara Fix */
-.btn-camera {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 50% !important;
-    width: 45px !important; height: 45px !important;
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-size: 20px !important; transition: all 0.2s ease-in-out; 
-    padding: 0 !important; margin: 0 !important;
-}
-.btn-camera:hover {
-    background: rgba(211, 47, 47, 0.1) !important;
-    border-color: var(--accent-red) !important;
-    transform: scale(1.05); box-shadow: 0 0 12px var(--accent-glow);
-}
+.post-group { border-bottom: 1px solid var(--border-color); }
+.card { padding: 20px; position: relative; }
+.card-img { width: 100%; max-height: 75vh; object-fit: contain; border-radius: 12px; margin: 12px 0; background: #000; border: 1px solid var(--border-color); }
 
-/* Botón Publicar Fix */
-/* --- BOTÓN PUBLICAR: SIN COLOR Y SIN BUGS --- */
-#enviarBtn {
-    background: none !important; /* Cero color de fondo */
-    color: var(--text-main) !important; /* Solo el texto */
-    border: 1px solid var(--border-color) !important; /* Borde simple */
-    padding: 8px 20px !important;
-    border-radius: 12px !important;
-    font-weight: 700 !important;
-    text-transform: uppercase;
-    cursor: pointer;
-    
-    /* MATAMOS CUALQUIER ANIMACIÓN O MOVIMIENTO */
-    transition: none !important; 
-    transform: none !important;
-    position: static !important;
-    box-shadow: none !important;
-}
+.like-btn, .reply-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer; padding: 10px 18px; border-radius: 14px; font-weight: 700; transition: 0.2s; }
+.like-active { color: #ff4500 !important; border-color: #ff4500 !important; transform: scale(1.05); }
 
-/* Solo un cambio de borde al pasar el mouse, nada de saltos */
-#enviarBtn:hover:not(:disabled) {
-    border-color: var(--text-main) !important;
-    background: rgba(255, 255, 255, 0.05) !important; /* Un brillo casi invisible */
-}
+/* LIGHTBOX (MODO CINE) */
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 10000; cursor: zoom-out; backdrop-filter: blur(10px); }
+.lightbox img, .lightbox video { max-width: 95%; max-height: 95%; border-radius: 8px; }
 
-/* Estado Desactivado: Opaco y sin interactividad */
-#enviarBtn:disabled {
-    color: var(--text-dim) !important;
-    border-color: var(--border-color) !important;
-    opacity: 0.4;
-    cursor: not-allowed !important;
-    pointer-events: none !important; /* Esto evita que el mouse lo detecte siquiera */
-}
-/* --- FEED & CARDS --- */
-.post-group { border-bottom: 1px solid var(--border-color); animation: fadeIn 0.4s ease-out; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.card, .reply-card { padding: 20px; width: 100%; box-sizing: border-box; word-wrap: break-word; }
-
-.card-img { 
-    width: 100% !important; height: auto !important; max-height: 75vh; 
-    object-fit: contain; border-radius: 12px; border: 1px solid var(--border-color);
-    margin: 12px 0; display: block; background: #000;
-}
-
-.footer-card { display: flex; gap: 12px; margin-top: 10px; }
-
-.like-btn, .reply-btn { 
-    background: var(--card-bg); border: 1px solid var(--border-color);
-    color: var(--text-main); cursor: pointer; display: flex; 
-    align-items: center; gap: 8px; font-size: 12px; font-weight: 700; 
-    padding: 10px 18px; border-radius: 14px; transition: 0.2s;
-}
-.reply-btn:hover { border-color: var(--accent-red); box-shadow: 0 0 10px var(--accent-glow); }
-
-/* RESPUESTAS */
-.reply-card { 
-    margin-left: 30px; border-left: 2px solid var(--accent-red);
-    background: rgba(211, 47, 47, 0.02); width: calc(100% - 30px);
-}
-
-/* --- MODAL --- */
+.custom-input { width: 100%; padding: 10px; margin: 10px 0; background: #161b22; border: 1px solid var(--border-color); color: white; border-radius: 8px; box-sizing: border-box; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-.modal-content { background: #000; padding: 25px; border-radius: 20px; border: 1px solid var(--border-color); text-align: center; max-width: 90%; }
+.modal-content { background: #000; padding: 25px; border-radius: 20px; border: 1px solid var(--border-color); text-align: center; width: 320px; }
 
-/* --- MEDIA QUERIES --- */
-@media (max-width: 600px) {
-    main { border: none; }
-    header h1 { font-size: 18px; }
-    #form-area { padding: 15px; }
-    textarea { font-size: 16px; }
-    .card, .reply-card { padding: 15px; }
-    .reply-card { margin-left: 15px; width: calc(100% - 15px); }
-    .like-btn, .reply-btn { padding: 8px 12px; font-size: 11px; }
-}
+.media-censurada { filter: blur(50px) brightness(0.3); pointer-events: none; }
+.nsfw-overlay { position: absolute; top: 15px; left: 0; width: 100%; height: calc(100% - 30px); display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); color: white; font-weight: bold; z-index: 5; cursor: pointer; border-radius: 12px; }
