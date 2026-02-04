@@ -1,4 +1,4 @@
-// --- JS COMPLETO Y REPARADO (Versión 1.21.10 - ZeroMail) ---
+// --- JS ersión 1.21.10 - ZeroMail---
 const SUPABASE_URL = "https://ksqrflkejlpojqhyktwf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_uFWqkx-ygAhFBS5Z_va8tg_qXi7z1QV";
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
