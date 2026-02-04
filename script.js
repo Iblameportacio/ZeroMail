@@ -9,7 +9,7 @@ let respondiendoA = null;
 
 const get = (id) => document.getElementById(id);
 
-// --- ARRANQUE SEGURO ---
+// --- ARRANQUE Y TIEMPO REAL ---
 const inicializarTodo = () => {
     const modal = get('modal-politicas');
     const btnAceptar = get('btn-aceptar');
@@ -22,12 +22,21 @@ const inicializarTodo = () => {
             if (modal) modal.style.display = 'none';
         };
     }
+    
+    // SUSCRIPCIÓN EN TIEMPO REAL: Actualiza la lista si hay cambios en la DB
+    _supabase
+        .channel('cambios-secretos')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'secretos' }, () => {
+            leerSecretos(); // Recarga la lista automáticamente cuando alguien da like o publica
+        })
+        .subscribe();
+
     leerSecretos();
 };
 
 document.addEventListener('DOMContentLoaded', inicializarTodo);
 
-// --- RENDER DE MEDIOS (VÍDEOS SIN LAG) ---
+// --- RENDER DE MEDIOS ---
 function renderMedia(url) {
     if (!url) return '';
     const esVideo = url.toLowerCase().match(/\.(mp4|webm|mov|ogg)/i);
@@ -37,11 +46,10 @@ function renderMedia(url) {
     return `<img src="${url}" class="card-img" onclick="abrirCine('${url}')" loading="lazy" style="cursor:zoom-in;">`;
 }
 
-// --- PUBLICACIÓN (CON BLOQUEO DE DUPLICADOS) ---
+// --- PUBLICACIÓN ---
 get('enviarBtn').onclick = async () => {
     const btn = get('enviarBtn');
     if (!tokenCaptcha || btn.disabled) return;
-    
     const txt = get('secretoInput').value.trim();
     if(!txt && !get('fotoInput').files[0]) return;
 
@@ -54,49 +62,48 @@ get('enviarBtn').onclick = async () => {
         if (file) {
             const ext = file.name.split('.').pop();
             const n = `${Date.now()}.${ext}`;
-            const { data, error: upErr } = await _supabase.storage.from('imagenes').upload(n, file);
+            const { error: upErr } = await _supabase.storage.from('imagenes').upload(n, file);
             if (upErr) throw upErr;
             url = _supabase.storage.from('imagenes').getPublicUrl(n).data.publicUrl;
         }
 
-        const { error: insErr } = await _supabase.from('secretos').insert([{ 
+        await _supabase.from('secretos').insert([{ 
             contenido: txt, 
             categoria: comunidadActual, 
             padre_id: respondiendoA, 
             imagen_url: url 
         }]);
-        
-        if (insErr) throw insErr;
 
-        // Limpieza exitosa
         get('secretoInput').value = ""; 
         get('fotoInput').value = "";
-        cancelarPreview(); 
-        cancelarRespuesta();
+        cancelarPreview(); cancelarRespuesta();
         if(window.turnstile) turnstile.reset();
         tokenCaptcha = null;
-        
-        // Recarga suave
         await leerSecretos();
     } catch(e) { 
-        console.error("Error en post:", e);
-        alert("Fallo al subir. Revisa tu conexión."); 
+        console.error(e);
+        alert("Error al publicar"); 
     } finally { 
         btn.disabled = false;
         btn.innerText = "Publicar"; 
     }
 };
 
-// --- CARGAR POSTS ---
+// --- CARGAR POSTS (CON FIX DE CACHE) ---
 async function leerSecretos() {
     const container = get('secretos-container');
     if (!container) return;
 
-    let q = _supabase.from('secretos').select('*');
+    // FIX: Forzamos a que no use cache del navegador
+    let q = _supabase.from('secretos').select('*', { count: 'exact' });
+    
+    // Aplicamos filtros
     if (filtroTop) q = q.order('likes', { ascending: false });
     else q = q.eq('categoria', comunidadActual).order('ultima_actividad', { ascending: false });
 
-    const { data, error } = await q;
+    // Forzar datos frescos mediante headers
+    const { data, error } = await q.setHeader('Cache-Control', 'no-cache');
+
     if (error || !data) return;
 
     const hilos = data.filter(s => !s.padre_id);
@@ -127,25 +134,23 @@ async function leerSecretos() {
     }).join('');
 }
 
-// --- LIKES (REDUCCIÓN DE LATENCIA) ---
+// --- LIKES ---
 async function reaccionar(id) {
     const btn = document.getElementById(`like-${id}`);
     if (!btn) return;
-    
     const ya = localStorage.getItem('v_' + id);
     let count = parseInt(btn.innerText.replace('🔥 ', '')) || 0;
 
-    // Efecto visual inmediato (Optimista)
     if (ya) {
         btn.classList.remove('like-active');
         btn.innerText = `🔥 ${Math.max(0, count - 1)}`;
         localStorage.removeItem('v_' + id);
-        _supabase.rpc('decrementar_reaccion', { row_id: id, columna_nombre: 'likes' });
+        await _supabase.rpc('decrementar_reaccion', { row_id: id, columna_nombre: 'likes' });
     } else {
         btn.classList.add('like-active');
         btn.innerText = `🔥 ${count + 1}`;
         localStorage.setItem('v_' + id, '1');
-        _supabase.rpc('incrementar_reaccion', { row_id: id, columna_nombre: 'likes' });
+        await _supabase.rpc('incrementar_reaccion', { row_id: id, columna_nombre: 'likes' });
     }
 }
 
@@ -153,7 +158,6 @@ async function reaccionar(id) {
 window.verInicio = () => { filtroTop = false; comunidadActual = 'general'; actualizarTabs('inicio'); leerSecretos(); };
 window.verTop = () => { filtroTop = true; actualizarTabs('top'); leerSecretos(); };
 function actualizarTabs(t) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(t))); }
-
 function mostrarPreview(el) {
     const f = el.files[0];
     const prev = get('preview-container');
@@ -169,7 +173,6 @@ function mostrarPreview(el) {
         r.readAsDataURL(f);
     }
 }
-
 function citarPost(id) { get('secretoInput').value += `>>${id} `; prepararRespuesta(id); }
 function prepararRespuesta(id) { 
     respondiendoA = id; 
