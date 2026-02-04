@@ -1,4 +1,3 @@
-// --- JS ersión 1.21.10 - ZeroMail---
 const SUPABASE_URL = "https://ksqrflkejlpojqhyktwf.supabase.co";
 const SUPABASE_KEY = "sb_publishable_uFWqkx-ygAhFBS5Z_va8tg_qXi7z1QV";
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -13,23 +12,14 @@ const get = (id) => document.getElementById(id);
 const inicializarTodo = () => {
     const modal = get('modal-politicas');
     const btnAceptar = get('btn-aceptar');
-    if (localStorage.getItem('politicasAceptadas')) {
-        if (modal) modal.style.display = 'none';
-    }
+    if (localStorage.getItem('politicasAceptadas')) if (modal) modal.style.display = 'none';
     if (btnAceptar) {
         btnAceptar.onclick = () => {
             localStorage.setItem('politicasAceptadas', 'true');
             if (modal) modal.style.display = 'none';
         };
     }
-    
-    _supabase
-        .channel('cambios-secretos')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'secretos' }, () => {
-            leerSecretos();
-        })
-        .subscribe();
-
+    _supabase.channel('cambios').on('postgres_changes', { event: '*', schema: 'public', table: 'secretos' }, leerSecretos).subscribe();
     leerSecretos();
 };
 
@@ -37,11 +27,9 @@ document.addEventListener('DOMContentLoaded', inicializarTodo);
 
 function renderMedia(url) {
     if (!url) return '';
-    const esVideo = url.toLowerCase().match(/\.(mp4|webm|mov|ogg)/i);
-    if (esVideo) {
-        return `<video src="${url}" controls playsinline muted class="card-img"></video>`;
-    }
-    return `<img src="${url}" class="card-img" onclick="abrirCine('${url}')" loading="lazy">`;
+    return url.toLowerCase().match(/\.(mp4|webm|mov|ogg)/i) 
+        ? `<video src="${url}" controls playsinline muted class="card-img"></video>`
+        : `<img src="${url}" class="card-img" onclick="abrirCine('${url}')" loading="lazy">`;
 }
 
 get('enviarBtn').onclick = async () => {
@@ -52,103 +40,72 @@ get('enviarBtn').onclick = async () => {
 
     btn.disabled = true;
     btn.innerText = "⏳";
-
     try {
         let url = null;
         const file = get('fotoInput').files[0];
         if (file) {
-            const ext = file.name.split('.').pop();
-            const n = `${Date.now()}.${ext}`;
-            const { error: upErr } = await _supabase.storage.from('imagenes').upload(n, file);
-            if (upErr) throw upErr;
+            const n = `${Date.now()}.${file.name.split('.').pop()}`;
+            await _supabase.storage.from('imagenes').upload(n, file);
             url = _supabase.storage.from('imagenes').getPublicUrl(n).data.publicUrl;
         }
-
-        // Se envía padre_id para mantener el hilo
-        await _supabase.from('secretos').insert([{ 
-            contenido: txt, 
-            categoria: comunidadActual, 
-            padre_id: respondiendoA, 
-            imagen_url: url 
-        }]);
-
-        get('secretoInput').value = ""; 
-        get('fotoInput').value = "";
-        cancelarPreview(); cancelarRespuesta();
-        if(window.turnstile) turnstile.reset();
-        tokenCaptcha = null;
-        await leerSecretos();
-    } catch(e) { 
-        console.error(e);
-        alert("Error al publicar"); 
-    } finally { 
-        btn.disabled = false;
-        btn.innerText = "Publicar"; 
-    }
+        await _supabase.from('secretos').insert([{ contenido: txt, categoria: comunidadActual, padre_id: respondiendoA, imagen_url: url }]);
+        get('secretoInput').value = ""; get('fotoInput').value = "";
+        cancelarRespuesta(); if(window.turnstile) turnstile.reset();
+        tokenCaptcha = null; leerSecretos();
+    } catch(e) { alert("Error al publicar"); } finally { btn.disabled = false; btn.innerText = "Publicar"; }
 };
 
 async function leerSecretos() {
     const container = get('secretos-container');
     if (!container) return;
-
     let q = _supabase.from('secretos').select('*');
     if (filtroTop) q = q.order('likes', { ascending: false });
-    else q = q.eq('categoria', comunidadActual).order('ultima_actividad', { ascending: false });
+    else q = q.order('id', { ascending: false });
 
-    const { data, error } = await q.setHeader('Cache-Control', 'no-cache');
+    const { data, error } = await q;
     if (error || !data) return;
 
-    const hilos = data.filter(s => !s.padre_id);
-    container.innerHTML = hilos.map(s => {
-        // Obtenemos todas las respuestas que pertenecen a este hilo
-        const susResp = data.filter(r => r.padre_id === s.id).sort((a,b) => a.id - b.id);
-        const yaLike = localStorage.getItem('v_' + s.id) ? 'like-active' : '';
-        
-        return `
-        <div class="post-group" style="margin-bottom:25px;">
-            <div class="card">
-                <span class="post-author" onclick="citarPost(${s.id})">#${s.id} [+]</span>
-                <p style="white-space: pre-wrap; font-size:18px; margin: 12px 0;">${escaparHTML(s.contenido)}</p>
-                ${renderMedia(s.imagen_url)}
-                <div class="footer-card" style="display:flex; gap:10px; margin-top:10px;">
-                    <button class="reply-btn" onclick="prepararRespuesta(${s.id})">💬 Responder</button>
-                    <button id="like-${s.id}" class="like-btn ${yaLike}" onclick="reaccionar(${s.id})">🔥 ${s.likes || 0}</button>
-                </div>
-            </div>
-            ${susResp.map(r => {
-                const yaLikeR = localStorage.getItem('v_' + r.id) ? 'like-active' : '';
-                // Detectar a qué ID responde dentro del texto (ej: >>662)
-                const mencion = r.contenido.match(/>>(\d+)/);
-                const infoRespuesta = mencion ? `<small style="opacity:0.6; margin-left:10px;">En respuesta a #${mencion[1]}</small>` : '';
-
-                return `
-                <div class="card" style="margin-left:35px; border-left: 2px solid var(--accent-red); background: rgba(22, 27, 34, 0.4); margin-bottom:8px; padding: 15px;">
-                    <span class="post-author" style="font-size:12px; opacity:0.8;" onclick="citarPost(${r.id})">#${r.id} ${infoRespuesta}</span>
-                    <p style="white-space: pre-wrap; margin: 8px 0;">${escaparHTML(r.contenido)}</p>
+    const renderizarRecursivo = (padreId, nivel = 0) => {
+        const hijos = data.filter(r => r.padre_id === padreId);
+        return hijos.map(r => {
+            const yaLike = localStorage.getItem('v_' + r.id) ? 'like-active' : '';
+            const tieneHijos = data.some(h => h.padre_id === r.id);
+            return `
+            <div class="post-group" style="margin-left: ${nivel > 0 ? 20 : 0}px; border-left: ${nivel > 0 ? '2px solid #ff4500' : 'none'}">
+                <div class="card" id="post-${r.id}">
+                    <span class="post-author" onclick="citarPost(${r.id})">#${r.id} ${nivel > 0 ? '↳' : '[+]'}</span>
+                    <p style="white-space: pre-wrap; margin: 10px 0;">${escaparHTML(r.contenido)}</p>
                     ${renderMedia(r.imagen_url)}
-                    <div class="footer-card" style="display:flex; gap:10px; margin-top:10px;">
-                        <button class="reply-btn" style="padding: 2px 8px; font-size:12px;" onclick="citarPost(${r.id})">💬 Responder</button>
-                        <button id="like-${r.id}" class="like-btn ${yaLikeR}" onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
+                    <div class="footer-card" style="display:flex; gap:10px; align-items:center;">
+                        <button class="reply-btn" onclick="prepararRespuesta(${r.id})">💬</button>
+                        <button id="like-${r.id}" class="like-btn ${yaLike}" onclick="reaccionar(${r.id})">🔥 ${r.likes || 0}</button>
+                        ${tieneHijos ? `<button class="toggle-btn" onclick="toggleHilos(${r.id})">Ver/Ocultar</button>` : ''}
                     </div>
-                </div>`}).join('')}
-        </div>`;
-    }).join('');
+                </div>
+                <div id="hijos-${r.id}" class="hilos-container">
+                    ${renderizarRecursivo(r.id, nivel + 1)}
+                </div>
+            </div>`;
+        }).join('');
+    };
+    container.innerHTML = renderizarRecursivo(null);
+}
+
+function toggleHilos(id) {
+    const el = get(`hijos-${id}`);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
 async function reaccionar(id) {
-    const btn = document.getElementById(`like-${id}`);
-    if (!btn) return;
+    const btn = get(`like-${id}`);
     const ya = localStorage.getItem('v_' + id);
     let count = parseInt(btn.innerText.replace('🔥 ', '')) || 0;
-
     if (ya) {
-        btn.classList.remove('like-active');
-        btn.innerText = `🔥 ${Math.max(0, count - 1)}`;
+        btn.classList.remove('like-active'); btn.innerText = `🔥 ${Math.max(0, count - 1)}`;
         localStorage.removeItem('v_' + id);
         await _supabase.rpc('decrementar_reaccion', { row_id: id, columna_nombre: 'likes' });
     } else {
-        btn.classList.add('like-active');
-        btn.innerText = `🔥 ${count + 1}`;
+        btn.classList.add('like-active'); btn.innerText = `🔥 ${count + 1}`;
         localStorage.setItem('v_' + id, '1');
         await _supabase.rpc('incrementar_reaccion', { row_id: id, columna_nombre: 'likes' });
     }
@@ -156,37 +113,16 @@ async function reaccionar(id) {
 
 function escaparHTML(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function captchaResuelto(t) { tokenCaptcha = t; get('enviarBtn').disabled = false; }
-
-function citarPost(id) { 
-    const input = get('secretoInput');
-    // Si ya tiene el ID, no lo repetimos
-    if (!input.value.includes(`>>${id}`)) {
-        input.value = `>>${id} ` + input.value; 
-    }
-    // Buscamos el post original para el padre_id
-    const cardOriginal = document.querySelector(`.post-group:has(#like-${id})`);
-    // Si el post clickeado ya es una respuesta, buscamos el padre_id del grupo
-    // Por ahora simplificamos: el hilo se mantiene agrupado por el ID del post principal
-    prepararRespuesta(id); 
-}
-
+function citarPost(id) { get('secretoInput').value += `>>${id} `; prepararRespuesta(id); }
 function prepararRespuesta(id) { 
     respondiendoA = id; 
-    get('reply-indicator').innerHTML = `<div style="color:var(--accent-red); margin-bottom:10px; font-size:14px; background: rgba(255, 69, 58, 0.1); padding: 8px; border-radius: 4px;">Respondida a #${id} <span onclick="cancelarRespuesta()" style="cursor:pointer; margin-left:10px; font-weight:bold;">[X]</span></div>`; 
-    get('secretoInput').focus(); 
+    get('reply-indicator').innerHTML = `<div style="color:#ff4500; font-size:12px; margin-bottom:5px;">Respondiendo a #${id} <span onclick="cancelarRespuesta()" style="cursor:pointer;">[X]</span></div>`; 
+    get('secretoInput').focus();
 }
-
 function cancelarRespuesta() { respondiendoA = null; get('reply-indicator').innerHTML = ""; }
-function cancelarPreview() { get('preview-container').style.display = "none"; get('fotoInput').value = ""; }
-
 function abrirCine(url) { 
-    const lb = get('lightbox');
-    get('lightbox-content').innerHTML = url.toLowerCase().match(/\.(mp4|webm|mov|ogg)/i)
-        ? `<video src="${url}" controls autoplay style="max-width:95vw; max-height:95vh;"></video>`
-        : `<img src="${url}" style="max-width:95vw; max-height:95vh;">`;
-    lb.style.display = 'flex'; 
+    get('lightbox-content').innerHTML = `<img src="${url}" style="max-width:95vw; max-height:95vh;">`;
+    get('lightbox').style.display = 'flex'; 
 }
-
-window.verInicio = () => { filtroTop = false; comunidadActual = 'general'; actualizarTabs('inicio'); leerSecretos(); };
-window.verTop = () => { filtroTop = true; actualizarTabs('top'); leerSecretos(); };
-function actualizarTabs(t) { document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(t))); }
+window.verInicio = () => { filtroTop = false; leerSecretos(); };
+window.verTop = () => { filtroTop = true; leerSecretos(); };
