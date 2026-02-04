@@ -5,15 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZeroMail | Comunidad Anónima</title>
     <link rel="stylesheet" href="./styles.css">
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
-    <script src="https://unpkg.com/nsfwjs@2.4.1/dist/browser/nsfwjs.min.js"></script>
 </head>
 <body>
-
     <div id="modal-politicas" class="modal-overlay">
         <div class="modal-content">
             <h2>ZeroMail | Comunidad</h2>
@@ -22,39 +17,15 @@
         </div>
     </div>
 
-    <div id="modal-registro" class="modal-overlay" style="display:none;">
-        <div class="modal-content">
-            <h3>Crear Cuenta VIP</h3>
-            <p style="font-size: 12px; color: var(--text-dim);">Usa un correo real para recuperar tu cuenta.</p>
-        
-            <input type="text" id="reg-user" placeholder="Nombre de usuario" class="custom-input"    >
-            <input type="email" id="reg-email" placeholder="Correo electrónico" class="custom-input">
-            <input type="password" id="reg-pass" placeholder="Contraseña" class="custom-input">
-        
-                <div id="captcha-registro" class="cf-turnstile" 
-                         data-sitekey="0x4AAAAAACWr0jixNQw4r2Li" 
-                         data-callback="captchaRegistroResuelto">
-                
-                 </div>
-
-            <button onclick="registrarUsuario()" id="btn-reg" disabled style="margin-top:15px;">Crear Cuenta</button>
-            <button onclick="toggleRegistro()" style="background:none; border:none; color:gray; cursor:pointer; display:block; width:100%; margin-top:10px;">Cancelar</button>
-        </div>
-    </div>
-
     <div id="lightbox" class="lightbox" onclick="this.style.display='none'"><div id="lightbox-content"></div></div>
-
-    <header>
-        <h1>Zero<span class="barbaro">Mail</span></h1>
-    </header>
+    <header><h1>Zero<span class="barbaro">Mail</span></h1></header>
 
     <div class="layout-container">
         <main>
             <nav class="comunidades-nav">
-                <button class="tab-btn active" onclick="cambiarComunidad('general')">Inicio</button>
+                <button class="tab-btn active" onclick="verInicio()">Inicio</button>
                 <button class="tab-btn" onclick="verTop()" style="color:#ff4500">TOP</button>
             </nav>
-
             <section id="form-area">
                 <div id="reply-indicator"></div>
                 <textarea id="secretoInput" placeholder="¿Qué está pasando?"></textarea>
@@ -66,11 +37,9 @@
                     <button id="enviarBtn" disabled>Publicar</button>
                 </div>
             </section>
-
             <section id="secretos-container"></section>
         </main>
     </div>
-
     <script src="./script.js"></script>
 </body>
 </html>
